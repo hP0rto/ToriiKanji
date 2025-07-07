@@ -2,6 +2,7 @@ from PyQt6.QtWidgets import QApplication, QWidget
 from PyQt6.QtCore import Qt, QRect
 
 def panel_settings(self):
+    '''Define Panel visibility settings '''
     # Finding screen resolution
     screen = QApplication.primaryScreen()
     screen_geometry = screen.geometry()

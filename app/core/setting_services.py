@@ -1,14 +1,14 @@
-import keyboard
 import os
 from lxml import etree
 
 class setting_services:
     def __init__(self):
         self.xml_path = self.get_xml_path()
+        self.create_hotkey_file()
         self.exit_key = 'f4'
         self.capture_key = 'f9' 
         self.toggle_key = 'f10'
-        pass   
+        self.set_setting()  
 
     def get_xml_path(self):
         '''Get .xml file path'''
@@ -28,7 +28,6 @@ class setting_services:
     def create_hotkey_file(self): 
         '''Create usersettings.xml if none exists''' 
         self.xml_path
-
         if not os.path.exists(self.xml_path):
         # create xml file
             data = etree.Element('hotkeys')
@@ -48,7 +47,8 @@ class setting_services:
         
 
 
-    def edit_hotkey_file(self):   
+    def edit_hotkey_file(self):
+        '''Edits the .xml file'''
         self.xml_path
         
         tree = etree.parse(self.xml_path)
@@ -56,16 +56,15 @@ class setting_services:
 
         exit_element = root.find('exit')
         if exit_element is not None:
-            exit_element.set('key', 'f8')
+            exit_element.set('key', 'f6')
 
         tree.write(self.xml_path, pretty_print=True, xml_declaration=True, encoding='utf-8')
 
-
         self.set_setting()
-        
-
+    
 
     def set_setting(self):
+        '''Sets class atributes to match the .xml'''
         self.xml_path
         tree = etree.parse(self.xml_path, None)
 
