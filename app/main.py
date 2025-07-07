@@ -1,6 +1,6 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QWidget
-from panel  import panel_settings
+from app.gui.panel  import panel_settings
 from pynput import keyboard
 from PIL import ImageGrab
 
@@ -9,7 +9,9 @@ class OverlayPanel(QWidget):
     def __init__(self):
         super().__init__()
 
+        # panel settings
         panel_settings(self)
+
         # show panel
         self.show()
 
