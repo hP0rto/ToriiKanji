@@ -27,7 +27,6 @@ class setting_services:
 
     def create_hotkey_file(self): 
         '''Create usersettings.xml if none exists''' 
-        self.xml_path
         if not os.path.exists(self.xml_path):
         # create xml file
             data = etree.Element('hotkeys')
@@ -49,8 +48,6 @@ class setting_services:
 
     def edit_hotkey_file(self):
         '''Edits the .xml file'''
-        self.xml_path
-        
         tree = etree.parse(self.xml_path)
         root = tree.getroot()
 
@@ -65,7 +62,6 @@ class setting_services:
 
     def set_setting(self):
         '''Sets class atributes to match the .xml'''
-        self.xml_path
         tree = etree.parse(self.xml_path, None)
 
         self.exit_key = tree.find('exit').get('key')
