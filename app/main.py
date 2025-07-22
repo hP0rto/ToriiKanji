@@ -1,7 +1,7 @@
 import sys
 from PyQt6.QtWidgets import QApplication, QWidget
 from gui.hotkey_services import CustomHotkeyEvent, config_hotkey, update_hotkey
-from gui.panel  import panel_settings
+from gui.panel  import panel_settings, button_settings
 from core.setting_services import setting_services
 
 
@@ -13,17 +13,17 @@ class OverlayPanel(QWidget):
 
         # panel settings
         panel_settings(self)
+        button_settings(self)
         config_hotkey(self)
 
         # show panel
         self.show()
 
     def reload_hotkeys(self):
-        '''Reload the hotkey, and updates the values in usersettings.xml'''
+        '''Reload the hotkey, and updates the values in usersettings.json'''
         usersettings = setting_services()
 
         usersettings.edit_settings_file('exit_key', 'f5')
-        
         update_hotkey(self)
 
 
