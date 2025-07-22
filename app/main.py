@@ -21,7 +21,9 @@ class OverlayPanel(QWidget):
     def reload_hotkeys(self):
         '''Reload the hotkey, and updates the values in usersettings.xml'''
         usersettings = setting_services()
-        usersettings.edit_hotkey_file()
+
+        usersettings.edit_settings_file('exit_key', 'f5')
+        
         update_hotkey(self)
 
 
