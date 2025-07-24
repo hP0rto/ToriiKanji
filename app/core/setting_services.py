@@ -1,18 +1,35 @@
 import os
 import json
 from lxml import etree
+from threading import Lock, Thread
 
-class setting_services:
+APP_DATA = os.getenv('APPDATA')
+JSON_PATH = os.path.join(APP_DATA, 'ToriiKanji\\usersettings.json')
+
+class SingletonMeta(type):
+    _instances = {}
+    _lock: Lock = Lock()
+
+    def __call__(cls, *args, **kwargs):
+        with cls._lock:
+            if cls not in cls._instances:
+                instance = super().__call__(*args,**kwargs)
+                cls._instances[cls] = instance
+            return cls._instances[cls]
+
+# PEP 8: Class always CamelCase
+class SettingsService(metaclass=SingletonMeta):
+    # Singleton
+
     def __init__(self):
+        self.user_settings = {
+                'exit_key': 'f4',
+                'capture_key': 'f9',
+                'toggle_key': 'f10'
+        } 
+        self.create_settings_file()
         self.set_settings()
 
-    user_settings = {
-            'exit_key': 'f4',
-            'capture_key': 'f9',
-            'toggle_key': 'f10'
-            } 
-    appdata_path = os.getenv('APPDATA')
-    json_file = os.path.join(appdata_path, 'ToriiKanji\\usersettings.json')
 
     def create_settings_file(self): 
         '''Create usersettings.json if none exists''' 
@@ -21,9 +38,8 @@ class setting_services:
         #   já q toda hora q for instanciado ele já vai ter q rodar isso daqui.
         #   se sua resposta for sim, exclui essa função e bota isso daqui junto com o resto dos coisas
         #
-        if not os.path.exists(self.json_file):
-            
-            with open(self.json_file, 'w') as file:
+        if not os.path.exists(JSON_PATH):
+            with open(JSON_PATH, 'w') as file:
                 json.dump(self.user_settings, file, indent=4)
     
     def edit_settings_file(self, action, key):
@@ -31,7 +47,7 @@ class setting_services:
         
         self.user_settings[action] = key
 
-        with open(self.json_file, 'w') as file:
+        with open(JSON_PATH, 'w') as file:
                 json.dump(self.user_settings, file, indent=4)
         
         self.set_settings()
@@ -39,15 +55,15 @@ class setting_services:
     def set_settings(self):
         '''Sets class atributes to match .json'''
         try:
-            with open(self.json_file, 'r') as file:
-                user_settings = json.load(file)
+            with open(JSON_PATH, 'r') as file:
+                json_user_settings = json.load(file)
             
-            self.exit_key = user_settings['exit_key']
-            self.capture_key = user_settings['capture_key']
-            self.toggle_key = user_settings['toggle_key']
+            self.user_settings['exit_key'] = json_user_settings['exit_key']
+            self.user_settings['capture_key'] = json_user_settings['capture_key']
+            self.user_settings['toggle_key'] = json_user_settings['toggle_key']
         except:
-            print(f'Could not reach settings file:{self.json_file}')
-
+            print(f'Could not reach settings file:{JSON_PATH}')
+        
 
     # def get_xml_path(self):
     #     '''Get .xml file path'''

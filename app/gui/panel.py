@@ -1,8 +1,10 @@
-from PyQt6.QtWidgets import QApplication, QWidget, QPushButton
+from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout
 from PyQt6.QtCore import Qt, QRect, QSize
-
 from PyQt6.QtGui import QIcon
-from gui.hotkey_services import CustomHotkeyEvent
+
+from gui.components.HotkeyLineEdit import HotkeyLineEdit
+from gui.hotkey_services import CustomHotkeyEvent, config_hotkey, update_hotkey
+from core.setting_services import SettingsService
 
 def panel_settings(self):
     '''Define Panel visibility settings '''
@@ -26,11 +28,19 @@ def panel_settings(self):
     self.setWindowTitle('ToriiKanji')
     self.setWindowFlag (Qt.WindowType.FramelessWindowHint |  # Sem bordas
                         Qt.WindowType.WindowStaysOnTopHint)
+    
+    layout = QVBoxLayout()
+
+
+    self.hotkey_input = HotkeyLineEdit()
+    layout.addWidget(self.hotkey_input)
+
+    self.setLayout(layout)
 
 def button_settings(self):
 
     exit_button = QPushButton('',self)
-    exit_button.setIcon(QIcon('assets/exit_button.svg'))
+    exit_button.setIcon(QIcon('../assets/exit_button.svg'))
     exit_button.move(0, 0)
     exit_button.setFixedSize(48,48)
     exit_button.setIconSize(QSize(48,48))
@@ -44,4 +54,38 @@ def button_settings(self):
     }
     """)
     exit_button.clicked.connect(lambda: QApplication.postEvent(self, CustomHotkeyEvent("exit")))
+
+class OverlayPanel(QWidget):
+
+    def __init__(self):
+        super().__init__()
+
+        # panel settings
+        panel_settings(self)
+        button_settings(self)
+        config_hotkey(self)
+
+
+
+        # show panel
+        self.show()
+
+    def reload_hotkeys(self):
+        '''Reload the hotkey, and updates the values in usersettings.json'''
+        usersettings = SettingsService()
+
+        usersettings.edit_settings_file('exit_key', 'f5')
+        update_hotkey(self)
+
+
+    def event(self, event):
+        if isinstance(event, CustomHotkeyEvent):       
+            if event.tipo == "exit":
+                QApplication.exit()
+            # elif event.tipo == "toggle":
+            #    self.toggle_visibility() 
+            # elif event.tipo == "capture":
+            #    self.capture_button()
+            return True
+        return super().event(event)
     
