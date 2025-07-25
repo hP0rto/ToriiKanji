@@ -6,6 +6,7 @@ class HotkeyLineEdit(QLineEdit):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._sequence = None
+        self.setStyleSheet(" border: 1px solid rgba(255, 255, 255, 0.3);border-radius: 16px;")
 
     def keyPressEvent(self, event):
         key = event.key()
