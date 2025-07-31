@@ -1,10 +1,7 @@
 import os
 import json
-from lxml import etree
-from threading import Lock, Thread
-
-APP_DATA = os.getenv('APPDATA')
-JSON_PATH = os.path.join(APP_DATA, 'ToriiKanji\\usersettings.json')
+from threading import Lock
+from utils.paths import JSON_PATH
 
 class SingletonMeta(type):
     _instances = {}
@@ -17,10 +14,8 @@ class SingletonMeta(type):
                 cls._instances[cls] = instance
             return cls._instances[cls]
 
-# PEP 8: Class always CamelCase
 class SettingsService(metaclass=SingletonMeta):
     # Singleton
-
     def __init__(self):
         self.user_settings = {
                 'exit_key': 'f4',

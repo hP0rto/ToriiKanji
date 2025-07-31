@@ -1,11 +1,12 @@
+from pathlib import Path
 from PyQt6.QtWidgets import QPushButton
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import QSize
 
 
-def create_icon_button(icon_path: str, tooltip: str = "", on_click=None, size=48) -> QPushButton:
+def create_icon_button(icon_path: Path, tooltip: str = "", on_click=None, size=48) -> QPushButton:
     button = QPushButton('')
-    button.setIcon(QIcon(icon_path))
+    button.setIcon(QIcon(str(icon_path)))
     button.setToolTip(tooltip)
     button.setFixedSize(size, size)
     button.setIconSize(QSize(size, size))
