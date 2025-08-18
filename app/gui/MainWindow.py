@@ -2,35 +2,30 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QStackedWidget, QApplication
 from PyQt6.QtCore import Qt, QRect
 
 from core.services.hotkey_services import CustomHotkeyEvent, config_hotkey
+from gui.components.CustomTabWidget import CustomTabWidget
 from gui.OverlayPanel import OverlayPanel
 from gui.SettingsPanel import SettingsPanel
+from utils.paths import BACKGROUND_IMG
 
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
-        
-        # Conigura hotkeys ao iniciar
+
         config_hotkey(self)
         
         self.panel_settings()
+        
+        tab = CustomTabWidget(self)
 
-        self.overlay_panel = OverlayPanel(main_window=self)
-        self.settings_panel = SettingsPanel(main_window=self)
-
-        # Stack para alternar entre as telas
-        self.stack = QStackedWidget()
-        self.stack.addWidget(self.overlay_panel)   # index 0
-        self.stack.addWidget(self.settings_panel)  # index 1
 
         layout = QVBoxLayout()
-        layout.addWidget(self.stack)
-        self.setLayout(layout)
 
+        layout.addWidget(tab)
+        self.setLayout(layout)
         self.show()
-        
+   
     def event(self, event):
-        print(f'Main: {event}')
-        
+           
         if isinstance(event, CustomHotkeyEvent):       
             if event.tipo == "exit":
                 QApplication.exit()
@@ -40,12 +35,6 @@ class MainWindow(QWidget):
             #    self.capture_button()
             return True
         return super().event(event)
-
-    def show_overlay_panel(self):
-        self.stack.setCurrentIndex(0)
-
-    def show_settings_panel(self):
-        self.stack.setCurrentIndex(1)
         
     def panel_settings(self):
         '''Define Panel visibility settings '''
@@ -71,11 +60,15 @@ class MainWindow(QWidget):
                             Qt.WindowType.WindowStaysOnTopHint)
         
         self.setWindowOpacity(0.92)
-        
-        self.setStyleSheet("""
-            QWidget {
+        self.setObjectName('main_panel')
+
+        self.setStyleSheet(f"""
+            MainWindow {{
+                background-image: url('{BACKGROUND_IMG.as_posix()}');
+                background-repeat: no-repeat;
+                background-position: center;
                 background-color: #1f1f1f;
                 border-radius: 16px;
-            }
+            }}
         """)
-    
+        

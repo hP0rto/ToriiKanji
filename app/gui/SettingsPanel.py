@@ -42,9 +42,8 @@ class SettingsPanel(QWidget):
         layout.addWidget(self.save_button)
         
         # Botão para fechar o painel
-        close_button = create_text_button("Fechar", self.main_window.show_overlay_panel)
-        layout.addWidget(close_button, alignment=Qt.AlignmentFlag.AlignRight)
-
+        # close_button = create_text_button("Fechar", self.main_window.show_overlay_panel)
+        # layout.addWidget(close_button, alignment=Qt.AlignmentFlag.AlignRight)
         self.setLayout(layout)
         
     def change_key(self):
