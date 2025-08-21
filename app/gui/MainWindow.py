@@ -1,10 +1,9 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QStackedWidget, QApplication
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QApplication, QSystemTrayIcon, QMenu
 from PyQt6.QtCore import Qt, QRect
+from PyQt6.QtGui import QIcon, QAction
 
 from core.services.hotkey_services import CustomHotkeyEvent, config_hotkey
 from gui.components.CustomTabWidget import CustomTabWidget
-from gui.OverlayPanel import OverlayPanel
-from gui.SettingsPanel import SettingsPanel
 from utils.paths import BACKGROUND_IMG
 
 class MainWindow(QWidget):
@@ -12,7 +11,8 @@ class MainWindow(QWidget):
         super().__init__()
 
         config_hotkey(self)
-        
+
+        self.config_tray()        
         self.panel_settings()
         
         tab = CustomTabWidget(self)
@@ -23,6 +23,25 @@ class MainWindow(QWidget):
         layout.addWidget(tab)
         self.setLayout(layout)
         self.show()
+   
+   
+    def config_tray(self):
+        self.tray_icon = QSystemTrayIcon(self)
+        self.tray_icon.setIcon(QIcon(str(BACKGROUND_IMG)))
+        self.tray_menu = QMenu()
+        
+        show_action = QAction("Mostrar", self)
+        show_action.triggered.connect(self.show)
+        self.tray_menu.addAction(show_action)
+    
+        
+        quit_action = QAction("Sair", self)
+        quit_action.triggered.connect(QApplication.exit)
+        self.tray_menu.addAction(quit_action)
+        
+        self.tray_icon.setContextMenu(self.tray_menu)
+
+        self.tray_icon.show()
    
     def event(self, event):
            
