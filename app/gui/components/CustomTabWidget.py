@@ -39,13 +39,23 @@ class CustomTabWidget(QWidget):
                         color: #FFFFFF;
                         padding: 10px;
                         font-size: 14px;
+                        border-radius: 10px;
                     }
                     
                     QPushButton:checked {
                         background-color: #C24338;
-                        border-radius: 10px;
+                        
                         font-weight: bold;
                     }
+                    
+                    QPushButton:checked:hover {
+                        
+                    }
+                    
+                    QPushButton:hover {
+                        background-color: #303030
+                    }
+                    
         ''')
         
         button.setCheckable(True)

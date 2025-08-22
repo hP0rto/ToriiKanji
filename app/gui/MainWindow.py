@@ -1,10 +1,10 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QApplication, QSystemTrayIcon, QMenu
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QApplication, QSystemTrayIcon, QMenu, QLabel, QGraphicsOpacityEffect
 from PyQt6.QtCore import Qt, QRect
-from PyQt6.QtGui import QIcon, QAction
+from PyQt6.QtGui import QIcon, QAction, QPixmap
 
 from core.services.hotkey_services import CustomHotkeyEvent, config_hotkey
 from gui.components.CustomTabWidget import CustomTabWidget
-from utils.paths import BACKGROUND_IMG
+from utils.paths import BACKGROUND_IMG, ICON
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -17,10 +17,10 @@ class MainWindow(QWidget):
         
         tab = CustomTabWidget(self)
 
-
         layout = QVBoxLayout()
-
         layout.addWidget(tab)
+        #layout.addWidget(self.background_label)
+        
         self.setLayout(layout)
         self.show()
    
@@ -48,13 +48,24 @@ class MainWindow(QWidget):
         if isinstance(event, CustomHotkeyEvent):       
             if event.tipo == "exit":
                 QApplication.exit()
-            # elif event.tipo == "toggle":
-            #    self.toggle_visibility() 
-            # elif event.tipo == "capture":
-            #    self.capture_button()
+            elif event.tipo == "toggle":
+               self.toggle_visibility() 
+            elif event.tipo == "capture":
+                self.capture_button()
             return True
         return super().event(event)
-        
+    
+    def capture_button(self):
+        print('Simulção de captura')
+    
+    def toggle_visibility(self):
+        if self.isVisible():
+            self.hide()
+        else:
+            self.show()
+            self.raise_()  # Garante que apareça em frente às outras janelas
+            self.activateWindow()
+    
     def panel_settings(self):
         '''Define Panel visibility settings '''
         # Finding screen resolution
@@ -77,17 +88,37 @@ class MainWindow(QWidget):
         self.setWindowTitle('ToriiKanji')
         self.setWindowFlag (Qt.WindowType.FramelessWindowHint |  # Sem bordas
                             Qt.WindowType.WindowStaysOnTopHint)
-        
+        self.setWindowIcon(QIcon(str(ICON)))
         self.setWindowOpacity(0.92)
         self.setObjectName('main_panel')
-
-        self.setStyleSheet(f"""
-            MainWindow {{
-                background-image: url('{BACKGROUND_IMG.as_posix()}');
-                background-repeat: no-repeat;
-                background-position: center;
-                background-color: #1f1f1f;
-                border-radius: 16px;
-            }}
-        """)
         
+        label_width = 477
+        label_height = 477
+
+        # Posição centralizada no painel
+        pos_x = (panel_width - label_width) // 2
+        pos_y = (panel_height - label_height) // 2
+    
+        self.background_label = QLabel(self)
+        self.background_label.setGeometry(QRect(pos_x,pos_y,label_width,label_height))
+        
+        pixmap = QPixmap(str(BACKGROUND_IMG)).scaled(
+        label_width,label_height,
+        Qt.AspectRatioMode.KeepAspectRatio,
+        Qt.TransformationMode.SmoothTransformation)
+        
+
+        
+        self.background_label.setPixmap(pixmap)
+        # Create an opacity effect
+        self.opacity_effect = QGraphicsOpacityEffect(self)
+
+        # Set the desired opacity (e.g., 0.5 for 50% transparency)
+        self.opacity_effect.setOpacity(0.1) 
+
+        # Apply the effect to the QLabel
+        self.background_label.setGraphicsEffect(self.opacity_effect)
+        
+        self.background_label.lower()
+        self.background_label.setAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter)
+    

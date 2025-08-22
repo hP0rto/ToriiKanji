@@ -3,10 +3,11 @@ from PyQt6.QtGui import QKeySequence
 from PyQt6.QtCore import Qt
 
 class HotkeyLineEdit(QLineEdit):
-    def __init__(self, parent=None):
+    def __init__(self,placeholder, parent=None, ):
         super().__init__(parent)
+        
         self._sequence = None
-        self.setStyleSheet(" border: 1px solid rgba(255, 255, 255, 0.3);border-radius: 16px;")
+        self.setText(placeholder)
 
     def keyPressEvent(self, event):
         key = event.key()

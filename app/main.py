@@ -8,7 +8,11 @@ from utils.paths import BACKGROUND_IMG
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     
-    splash_pix = QPixmap(str(BACKGROUND_IMG)) 
+    splash_pix = QPixmap(str(BACKGROUND_IMG)).scaled(
+        400,300,
+        Qt.AspectRatioMode.KeepAspectRatio,
+        Qt.TransformationMode.SmoothTransformation)
+    
     splash = QSplashScreen(splash_pix, Qt.WindowType.FramelessWindowHint)
     splash.setWindowFlag(Qt.WindowType.WindowStaysOnTopHint)
     splash.setEnabled(False)
@@ -19,10 +23,16 @@ if __name__ == '__main__':
     def update_progress():
         progress["value"] += 5
         splash.showMessage(
-            f"Loading... {progress['value']}%",
+            'ToriiKanji',
+            Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignCenter,
+            QColor('black')
+        )
+        splash.showMessage(
+            f"ToriiKanji\n{progress['value']}%",
             Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignCenter,
             QColor("white")
         )
+        
         if progress["value"] >= 100:
             timer.stop()
             main = MainWindow()
