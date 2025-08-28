@@ -9,6 +9,9 @@ class CustomTabWidget(QWidget):
         self.main_window = main_window
         layout = QVBoxLayout(self)
 
+        self.overlay_panel = OverlayPanel(self.main_window)
+        self.settings_panel = SettingsPanel(self.main_window)
+        
         # Barra de navegação (abas)
         self.tab_bar = QHBoxLayout()
         self.tab_bar.setContentsMargins(0,0,0,0)
@@ -21,11 +24,15 @@ class CustomTabWidget(QWidget):
         self.stack = QStackedWidget()
         layout.addWidget(self.stack)
         # Criando abas e páginas
-        self.add_tab("Insights", OverlayPanel(self.main_window)) 
+        self.add_tab("Insights", self.overlay_panel) 
         self.add_tab("Collections", QLabel("Conteúdo da aba Collections"))
-        self.add_tab("Settings", SettingsPanel(self.main_window))
+        self.add_tab("Settings", self.settings_panel)
 
         self.show_tab(0)  # inicia na primeira aba
+
+    def show_capture(self, pixmap):
+        """Encaminha a captura para o painel"""
+        self.overlay_panel.show_capture(pixmap)
 
     def add_tab(self, title, widget):
         index = self.stack.addWidget(widget)

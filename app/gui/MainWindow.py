@@ -1,7 +1,10 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QApplication, QSystemTrayIcon, QMenu, QLabel, QGraphicsOpacityEffect
-from PyQt6.QtCore import Qt, QRect
+from tkinter import Tk
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QApplication, QSystemTrayIcon, QMenu, QLabel, QGraphicsOpacityEffect, QMessageBox
+from PyQt6.QtCore import Qt, QRect, QSize
 from PyQt6.QtGui import QIcon, QAction, QPixmap
 
+from core.services.capture_service import CaptureService
+from ocr.ScreenCapture import ScreenCapture
 from core.services.hotkey_services import CustomHotkeyEvent, config_hotkey
 from gui.components.CustomTabWidget import CustomTabWidget
 from utils.paths import BACKGROUND_IMG, ICON
@@ -11,16 +14,15 @@ class MainWindow(QWidget):
         super().__init__()
 
         config_hotkey(self)
-
         self.config_tray()        
         self.panel_settings()
         
-        tab = CustomTabWidget(self)
-
-        layout = QVBoxLayout()
-        layout.addWidget(tab)
-        #layout.addWidget(self.background_label)
+        self.capture_service = CaptureService()
         
+        self.custom_tab = CustomTabWidget(self)
+        layout = QVBoxLayout()
+        
+        layout.addWidget(self.custom_tab)
         self.setLayout(layout)
         self.show()
    
@@ -49,14 +51,25 @@ class MainWindow(QWidget):
             if event.tipo == "exit":
                 QApplication.exit()
             elif event.tipo == "toggle":
-               self.toggle_visibility() 
+                self.toggle_visibility() 
             elif event.tipo == "capture":
-                self.capture_button()
+                self.capture_handler()
+                    
             return True
         return super().event(event)
-    
-    def capture_button(self):
-        print('Simulção de captura')
+    def capture_handler(self):
+        try:
+            self.toggle_visibility()
+            result = self.capture_service.capture_image()
+            
+            self.custom_tab.show_capture(result.get('pixmap'))
+            self.tray_icon.showMessage("Captura", "Captuta realizada com sucesso!",QSystemTrayIcon.MessageIcon.NoIcon)
+                
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error saving settings:\n{e}")
+        
+        self.toggle_visibility()
+        
     
     def toggle_visibility(self):
         if self.isVisible():

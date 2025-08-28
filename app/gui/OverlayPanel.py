@@ -24,5 +24,19 @@ class OverlayPanel(QWidget):
         layout.addWidget(select)
         
         self.setLayout(layout)
+        
+        
+        self.capture_label = QLabel("Nenhuma captura ainda")
+        self.capture_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(self.capture_label)
+        
         # show panel
         self.show()
+        
+    def show_capture(self, pixmap: QPixmap):
+        """Exibe a captura no painel"""
+        self.capture_label.setPixmap(pixmap.scaled(
+            400, 400,  # tamanho máximo de preview
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation
+        ))
