@@ -30,9 +30,9 @@ class CustomTabWidget(QWidget):
 
         self.show_tab(0)  # inicia na primeira aba
 
-    def show_capture(self, pixmap):
+    def show_capture(self, result):
         """Encaminha a captura para o painel"""
-        self.overlay_panel.show_capture(pixmap)
+        self.overlay_panel.show_capture(result)
 
     def add_tab(self, title, widget):
         index = self.stack.addWidget(widget)

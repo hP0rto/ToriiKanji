@@ -57,20 +57,24 @@ class MainWindow(QWidget):
                     
             return True
         return super().event(event)
+    
+    
     def capture_handler(self):
         try:
-            self.toggle_visibility()
+            if self.isVisible():
+                self.toggle_visibility()
+            
             result = self.capture_service.capture_image()
             
-            self.custom_tab.show_capture(result.get('pixmap'))
+            
+            self.custom_tab.show_capture(result)
             self.tray_icon.showMessage("Captura", "Captuta realizada com sucesso!",QSystemTrayIcon.MessageIcon.NoIcon)
                 
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Error saving settings:\n{e}")
-        
+            QMessageBox.critical(self, "Error", f"Error saving capture: \n{e}")
+            
         self.toggle_visibility()
-        
-    
+
     def toggle_visibility(self):
         if self.isVisible():
             self.hide()
