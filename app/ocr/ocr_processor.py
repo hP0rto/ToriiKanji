@@ -1,16 +1,15 @@
 import pytesseract
 import shutil
 
-
 from utils.paths import TESSERACT_PATH
-from utils.converters import qpixmap_to_pil
-from PyQt6.QtGui import QPixmap, QImage
+
 from PIL import Image
 
 class OcrProcessor:
     def __init__(self, lang="jpn"):
         self.lang = lang
         self._configure_tesseract()
+        self.file_name = ""
 
     def _configure_tesseract(self):
         path_in_system = shutil.which("tesseract")
@@ -24,17 +23,9 @@ class OcrProcessor:
         # Config extra para usar tessdata embutido
         self.config = f'--oem 3 --psm 6'
 
-    def extract_text(self, pixmap: QPixmap) -> str:
-        
-        pil_img = qpixmap_to_pil(pixmap)
-        
-        text = pytesseract.image_to_string(pil_img, lang=self.lang, config=self.config)
-        
-        return text
+    def extract_text(self, image: Image.Image) -> str:
+        return pytesseract.image_to_string(image, lang=self.lang, config=self.config)
+         
 
     def extract_data(self, image: Image.Image):
-        """
-        Retorna OCR estruturado (bounding boxes, confidência, etc).
-        """
         return pytesseract.image_to_data(image, lang=self.lang, config=self.config, output_type=pytesseract.Output.DICT)
-    

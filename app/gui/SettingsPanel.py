@@ -82,10 +82,15 @@ class SettingsPanel(QWidget):
 
             grid.addWidget(action_label, row, 0)
             grid.addWidget(hotkey_input, row, 1)
-
+            
 
         main_layout.addLayout(grid)
 
+        title2 = QLabel('Saving')
+        title2.setStyleSheet("font-size: 16px; font-weight: bold; color: white;")
+        main_layout.addWidget(title2)
+        
+        # ---------- Other Settings Section ----------
         self.save_button = create_text_button('Save', on_click=self.save_settings)
         
         main_layout.addStretch()

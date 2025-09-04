@@ -67,7 +67,7 @@ class ScreenCapture:
 
         # Captura a região e salva a imagem
         self.screenshot = pyautogui.screenshot(region=(x, y, width, height))
-        # screenshot.save(f"images/{self.file_name}.png")
+        #self.screenshot.save(f"images/{self.file_name}.png")
 
     def cancel_capture(self, event):
         self.root.destroy()

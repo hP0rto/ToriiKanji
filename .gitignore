@@ -1,5 +1,6 @@
 tesseract/
-.db
+database/
+captures/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -35,8 +35,13 @@ class OverlayPanel(QWidget):
         self.text_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.text_label.setStyleSheet('font-size: 40px')
         
+        self.kanji_result = QTextEdit()
+        self.kanji_result.setReadOnly(True)  # impede edição
+        self.kanji_result.setStyleSheet("font-size: 13px; padding: 6px;")
+        
         layout.addWidget(self.capture_label)
         layout.addWidget(self.text_label)
+        layout.addWidget(self.kanji_result)
         
         # show panel
         self.show()
@@ -53,6 +58,28 @@ class OverlayPanel(QWidget):
         ))
         
         
-        self.text_label.setText(result.get('text'))
+        self.text_label.setText(result.get('raw_text'))
         
+        self.exibir_resultado(result.get('kanjis'))
+        
+        
+
+    def exibir_resultado(self, result_dict):
+        content = ''
+        for row in result_dict:
+            content += f"""
+            <b>Kanji:</b> {row["kanji"]}<br>
+            <b>Onyomi:</b> {row["onyomi"]}<br>
+            <b>Kunyomi:</b> {row["kunyomi"]}<br>
+            <b>Meaning:</b> {row["meaning"]}<br>
+            <b>Grade:</b> {row["grade"]}<br>
+            <b>JLPT:</b> N{row["jlpt"] if row["jlpt"] else "-"}
+            <hr>
+            """
+        # for row in result_dict:
+        #     content += f"""
+        #     <b>Kanji:</b> {row}<br>
+        #     <hr>
+        #     """
+        self.kanji_result.setHtml(content)
         

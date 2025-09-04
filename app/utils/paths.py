@@ -5,6 +5,7 @@ import os, sys
     Arquivo para centralizar acesso de caminhos no codigo
 '''
 BASE_DIR = Path(__file__).resolve().parent.parent  # volta para pasta /app
+DB_PATH = BASE_DIR.parent / 'database' / 'toriikanji.db'
 ASSETS = BASE_DIR.parent / 'assets'
 TESSERACT_PATH = BASE_DIR.parent / 'tesseract' / 'tesseract.exe'
 

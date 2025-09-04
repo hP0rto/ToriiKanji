@@ -1,12 +1,20 @@
 from tkinter import Tk
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QApplication, QSystemTrayIcon, QMenu, QLabel, QGraphicsOpacityEffect, QMessageBox
-from PyQt6.QtCore import Qt, QRect, QSize
+from PyQt6.QtCore import Qt, QRect, QThread
 from PyQt6.QtGui import QIcon, QAction, QPixmap
 
+from db.repositories.kanji_repository import KanjiRepository
+from db.repositories.capture_repository import CaptureRepository
+from db.handlers.capture_handler import CaptureHandler
+
+from core.services.setting_services import SettingsService
+from core.workers.ocr_worker import OcrWorker
 from core.services.capture_service import CaptureService
-from ocr.ScreenCapture import ScreenCapture
+from core.services.ocr_service import OcrService
 from core.services.hotkey_services import CustomHotkeyEvent, config_hotkey
+
 from gui.components.CustomTabWidget import CustomTabWidget
+
 from utils.paths import BACKGROUND_IMG, ICON
 
 class MainWindow(QWidget):
@@ -17,7 +25,14 @@ class MainWindow(QWidget):
         self.config_tray()        
         self.panel_settings()
         
+        self.ocr_service = OcrService()
         self.capture_service = CaptureService()
+        self.setting_service = SettingsService()
+        
+        
+        self.kanji_repo = KanjiRepository()
+        self.capture_repository = CaptureRepository()
+        self.capture_handler = CaptureHandler(self.capture_repository)
         
         self.custom_tab = CustomTabWidget(self)
         layout = QVBoxLayout()
@@ -53,28 +68,82 @@ class MainWindow(QWidget):
             elif event.tipo == "toggle":
                 self.toggle_visibility() 
             elif event.tipo == "capture":
-                self.capture_handler()
+                self.initialize_capture()
                     
             return True
         return super().event(event)
     
     
-    def capture_handler(self):
-        try:
-            if self.isVisible():
-                self.toggle_visibility()
-            
-            result = self.capture_service.capture_image()
-            
-            
-            self.custom_tab.show_capture(result)
-            self.tray_icon.showMessage("Captura", "Captuta realizada com sucesso!",QSystemTrayIcon.MessageIcon.NoIcon)
-                
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Error saving capture: \n{e}")
-            
-        self.toggle_visibility()
+    def process_capture(self, image):
+        self.thread = QThread()
+        self.worker = OcrWorker(self.ocr_service, image)
+        self.worker.moveToThread(self.thread)
 
+        self.thread.started.connect(self.worker.run)
+        self.worker.finished.connect(self.on_ocr_finished)
+        self.worker.error.connect(self.on_ocr_error)
+
+        # limpa quando terminar
+        self.worker.finished.connect(self.thread.quit)
+        self.worker.finished.connect(self.worker.deleteLater)
+        self.thread.finished.connect(self.thread.deleteLater)
+
+        self.thread.start()
+            
+    def on_ocr_finished(self, result):
+        self.toggle_visibility()
+        print("OCR result:", result)
+        #image = result["screenshot"]
+        
+        
+        kanjis = result["kanjis"]
+        result['kanjis'] = self.kanji_repo.find_many(kanjis)
+
+        self.custom_tab.show_capture(result)
+        
+        #if self.capture_handler.auto_save:
+        self.save_capture_async(result)
+        
+
+    def on_ocr_error(self, msg):
+        self.toggle_visibility()
+        print("Erro OCR:", msg) 
+        QMessageBox.critical(self, "Error", f"Error on capture: \n{msg}")
+    
+    def initialize_capture(self):
+        if self.isVisible():
+            self.toggle_visibility()
+        
+        result = self.capture_service.start_screenshot()
+        
+        self.process_capture(result.get('screenshot'))
+        
+        self.tray_icon.showMessage("Capture", "Capture initialized!",QSystemTrayIcon.MessageIcon.NoIcon)
+    
+
+    def save_capture_async(self, result):
+        """Roda insert no banco em thread separada"""
+        from core.workers.db_worker import DbWorker
+        self.db_thread = QThread()
+        self.db_worker = DbWorker(
+            self.capture_handler, 
+            "save_capture", 
+            result["pixmap"], 
+            result["kanjis"]
+        )
+        self.db_worker.moveToThread(self.db_thread)
+
+        self.db_thread.started.connect(self.db_worker.run)
+        self.db_worker.finished.connect(lambda id: self.tray_icon.showMessage("Capture", f"Capture {id} saved successfully!",QSystemTrayIcon.MessageIcon.NoIcon))
+        self.db_worker.error.connect(lambda e: QMessageBox.critical(self, "Error", f"Error on saving capture: \n{e}"))
+
+        self.db_worker.finished.connect(self.db_thread.quit)
+        self.db_worker.finished.connect(self.db_worker.deleteLater)
+        self.db_thread.finished.connect(self.db_thread.deleteLater)
+
+        self.db_thread.start()
+    
+    
     def toggle_visibility(self):
         if self.isVisible():
             self.hide()
