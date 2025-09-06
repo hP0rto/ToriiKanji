@@ -21,7 +21,8 @@ class SettingsService(metaclass=SingletonMeta):
                 'exit_key': 'f4',
                 'capture_key': 'f9',
                 'toggle_key': 'f10',
-                'auto_save' : False
+                'auto_save' : False,
+                'save_image' : False,
         }
 
         if not os.path.exists(JSON_PATH):
@@ -51,6 +52,8 @@ class SettingsService(metaclass=SingletonMeta):
             self.user_settings['capture_key'] = json_user_settings['capture_key']
             self.user_settings['toggle_key'] = json_user_settings['toggle_key']
             self.user_settings['auto_save'] = json_user_settings['auto_save']
+            self.user_settings['save_image'] = json_user_settings['save_image']
+            
         except:
             print(f'Could not reach settings file:{JSON_PATH}')
     

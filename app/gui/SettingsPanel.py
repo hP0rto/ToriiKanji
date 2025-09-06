@@ -1,10 +1,13 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QGridLayout, QMessageBox
-from PyQt6.QtGui import QMovie, QIcon, QPixmap
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QGridLayout, QMessageBox, QHBoxLayout
 from PyQt6.QtCore import Qt, QRunnable, QThreadPool, pyqtSignal, QObject
+
 from core.services.hotkey_services import update_hotkey
+from core.services.setting_services import SettingsService
+
+
+from gui.components.Switch import Switch
 from gui.components.HotkeyLineEdit import HotkeyLineEdit
 from gui.components.buttons_factory import create_text_button
-from core.services.setting_services import SettingsService
 
 class WorkerSignals(QObject):
     finished = pyqtSignal()
@@ -24,11 +27,10 @@ class SaveWorker(QRunnable):
             for key, widget in self.inputs.items():
                 if isinstance(widget, HotkeyLineEdit):
                     self.setting_service.edit_settings_file(key, widget.text())
-                    
-
+                elif isinstance(widget, Switch):
+                    self.setting_service.edit_settings_file(key, widget.isChecked())
         
             update_hotkey(self.main_window) 
-            # Se necessário: update_hotkey(self.main_window)
             self.signals.finished.emit()
 
         except Exception as e:
@@ -75,7 +77,6 @@ class SettingsPanel(QWidget):
             hotkey_input.setObjectName(hotkey)
             hotkey_input.setAlignment(Qt.AlignmentFlag.AlignCenter)
             hotkey_input.setStyleSheet("color: white; font-size: 16px; border: 1px solid #aaa; border-radius: 6px; padding: 5px 10px ;")
-
             self.inputs[hotkey] = hotkey_input
             
             #hotkey_input.editingFinished.connect(lambda h=hotkey_input: self.change_key(h))
@@ -85,11 +86,51 @@ class SettingsPanel(QWidget):
             
 
         main_layout.addLayout(grid)
+        # ---------- Saving Settings ----------
+        
+        
 
         title2 = QLabel('Saving')
         title2.setStyleSheet("font-size: 16px; font-weight: bold; color: white;")
         main_layout.addWidget(title2)
         
+        
+        options = [
+            ("Save capture automatically", "auto_save"),
+            ("Save image captures on disk", "save_image"),
+        ]
+
+        grid = QGridLayout()
+        grid.setSpacing(12)
+        grid.setColumnStretch(0, 3)
+        grid.setColumnStretch(1, 1)
+
+        self.enable_labels = {}
+
+        for row, (label_text, key) in enumerate(options):
+            state = self.setting_service.user_settings.get(key, False)
+            
+            label = QLabel(label_text)
+            label.setStyleSheet("color: white; font-size: 14px;")
+            
+            enable_label = QLabel('Enable' if state else 'Disable')
+            enable_label.setStyleSheet("color: white; font-size: 14px; padding-right: 10px;font-weight: bold;")
+            
+            switch = Switch()
+            switch.setChecked(state)
+            switch.clicked.connect(lambda check, enable_lab=enable_label, key=key: self.on_switch_changed(check,enable_lab,key))
+            self.inputs[key] = switch
+
+            self.enable_labels[key] = enable_label
+
+            grid.addWidget(label, row, 0, alignment=Qt.AlignmentFlag.AlignLeft)
+            grid.addWidget(enable_label, row, 1, alignment=Qt.AlignmentFlag.AlignLeft)
+            grid.addWidget(switch, row, 1, alignment=Qt.AlignmentFlag.AlignRight)
+
+        self.on_switch_changed(self.inputs["auto_save"].isChecked(), self.enable_labels["auto_save"], key="auto_save")
+        
+        main_layout.addLayout(grid)
+                        
         # ---------- Other Settings Section ----------
         self.save_button = create_text_button('Save', on_click=self.save_settings)
         
@@ -97,7 +138,22 @@ class SettingsPanel(QWidget):
         main_layout.addWidget(self.save_button)
         
         self.setLayout(main_layout)
+
+    def on_switch_changed(self, checked, enable_label, key):
+        enable_label.setText('Enable' if checked else 'Disable')
         
+        if key == "auto_save":
+            dependent_switch = self.inputs["save_image"]  # exemplo de outro switch
+            dependent_label = self.enable_labels["save_image"]
+
+            if checked:
+                dependent_switch.setChecked(True)
+                dependent_switch.setEnabled(False)  # bloqueia interação
+                dependent_label.setText("Enable")
+                dependent_label.setStyleSheet("color: #aaa; font-size: 14px; padding-right: 10px;font-weight: bold;")  # fica cinza
+            else:
+                dependent_switch.setEnabled(True)  # libera interação
+                dependent_label.setStyleSheet("color: white; font-size: 14px; padding-right: 10px;font-weight: bold;")
         
     def save_settings(self):
         self.save_button.setEnabled(False)

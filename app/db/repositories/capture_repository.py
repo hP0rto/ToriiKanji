@@ -19,21 +19,3 @@ class CaptureRepository:
             ''', (capture_id, kanji))
             
             conn.commit()
-            
-            
-    def save_capture(self, image_path, kanjis, media_id=None):
-        with get_connection() as conn:
-            cur = conn.cursor()
-            cur.execute(
-                "INSERT INTO capture (image_path, media_id) VALUES (?, ?)",
-                (image_path, media_id)
-            )
-            capture_id = cur.lastrowid
-
-            for k in kanjis:
-                cur.execute(
-                    "INSERT INTO capture_kanji (capture_id, kanji) VALUES (?, ?)",
-                    (capture_id, k)
-                )
-
-        return capture_id

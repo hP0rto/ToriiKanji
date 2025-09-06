@@ -1,4 +1,4 @@
-from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
 
 class OcrWorker(QObject):
@@ -9,7 +9,8 @@ class OcrWorker(QObject):
         super().__init__()
         self.ocr_service = ocr_service
         self.image = image
-
+        
+    @pyqtSlot()
     def run(self):
         try:
             result = self.ocr_service.extract_kanji(self.image)

@@ -1,4 +1,4 @@
-from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
 class DbWorker(QObject):
     finished = pyqtSignal(object)
@@ -11,6 +11,7 @@ class DbWorker(QObject):
         self.args = args
         self.kwargs = kwargs
 
+    @pyqtSlot()
     def run(self):
         try:
             result = getattr(self.handler, self.action)(*self.args, **self.kwargs)
