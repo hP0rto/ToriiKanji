@@ -2,12 +2,12 @@ from db.database import get_connection
 
 class CaptureRepository:
 
-    def insert_capture(self, image_path, media_id=None):
+    def insert_capture(self, raw_text, image_path, media_id=None):
         with get_connection() as conn:
             cur = conn.cursor()
             cur.execute(''' 
-                INSERT INTO capture (image_path,media_id) VALUES (?, ?)
-            ''', (image_path,media_id))
+                INSERT INTO capture (raw_text ,image_path,media_id) VALUES (?,?, ?)
+            ''', (raw_text, image_path,media_id))
             conn.commit()
             return cur.lastrowid
     
@@ -19,3 +19,21 @@ class CaptureRepository:
             ''', (capture_id, kanji))
             
             conn.commit()
+            
+    def select_captures(self):
+        with get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute('SELECT * FROM capture')
+            return [dict(row) for row in cur.fetchall()]
+            
+    def select_capture_by_id(self, id):
+        with get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute('SELECT * FROM capture WHERE id = ?', (id,))
+            return cur.fetchone()
+    
+    def delete_capture(self,id):
+        with get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute('DELETE FROM capture WHERE id = ?', (id,))
+            return cur.fetchone()

@@ -1,6 +1,8 @@
 
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QStackedWidget, QLabel
-from PyQt6.QtCore import Qt
+
+
+from gui.CollectionPanel import CollectionPanel
 from gui.SettingsPanel import SettingsPanel
 from gui.OverlayPanel import OverlayPanel
 class CustomTabWidget(QWidget):
@@ -11,27 +13,24 @@ class CustomTabWidget(QWidget):
 
         self.overlay_panel = OverlayPanel(self.main_window)
         self.settings_panel = SettingsPanel(self.main_window)
+        self.collection_panel = CollectionPanel(self.main_window)
         
-        # Barra de navegação (abas)
         self.tab_bar = QHBoxLayout()
         self.tab_bar.setContentsMargins(0,0,0,0)
         self.tab_bar.setSpacing(0)
-        
-        
+                
         layout.addLayout(self.tab_bar)
 
-        # Conteúdo
         self.stack = QStackedWidget()
         layout.addWidget(self.stack)
-        # Criando abas e páginas
+
         self.add_tab("Insights", self.overlay_panel) 
-        self.add_tab("Collections", QLabel("Conteúdo da aba Collections"))
+        self.add_tab("Collections", self.collection_panel)
         self.add_tab("Settings", self.settings_panel)
 
-        self.show_tab(0)  # inicia na primeira aba
+        self.show_tab(0)
 
     def show_capture(self, result):
-        """Encaminha a captura para o painel"""
         self.overlay_panel.show_capture(result)
 
     def add_tab(self, title, widget):

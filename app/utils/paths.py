@@ -14,6 +14,7 @@ EXIT_ICON = ASSETS / 'exit_button.svg'
 SETTINGS_ICON = ASSETS / 'setting_button.svg'
 BACKGROUND_IMG = ASSETS / 'background.png'
 ICON = ASSETS / 'icon' / 'icon.ico'
+NO_IMG = ASSETS / 'no_image.png'
 
 APP_NAME = 'ToriiKanji'
 

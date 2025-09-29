@@ -1,12 +1,14 @@
 from tkinter import Tk
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QApplication, QSystemTrayIcon, QMenu, QLabel, QGraphicsOpacityEffect, QMessageBox
-from PyQt6.QtCore import Qt, QRect, QThread
+from PyQt6.QtCore import Qt, QRect, QThread, QSize
 from PyQt6.QtGui import QIcon, QAction, QPixmap
 
-from db.repositories.kanji_repository import KanjiRepository
+from utils.helpers import run_in_thread
+from utils.paths import BACKGROUND_IMG, ICON
 
 from core.workers.db_worker import DbWorker
 from core.workers.ocr_worker import OcrWorker
+from core.services.kanji_service import KanjiService
 from core.services.setting_services import SettingsService
 from core.services.capture_service import CaptureService
 from core.services.ocr_service import OcrService
@@ -14,7 +16,7 @@ from core.services.hotkey_services import CustomHotkeyEvent, config_hotkey
 
 from gui.components.CustomTabWidget import CustomTabWidget
 
-from utils.paths import BACKGROUND_IMG, ICON
+
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -27,14 +29,20 @@ class MainWindow(QWidget):
         self.config_tray()        
         self.panel_settings()
         
+        
+        
+        
         self.ocr_service = OcrService()
         self.capture_service = CaptureService()
         self.setting_service = SettingsService()
-        
-        
-        self.kanji_repo = KanjiRepository()
+        self.kanji_service = KanjiService()
         
         self.custom_tab = CustomTabWidget(self)
+        
+        overlay = self.custom_tab.overlay_panel  
+        overlay.save_requested.connect(self.on_save_requested)
+        
+        
         layout = QVBoxLayout()
         
         layout.addWidget(self.custom_tab)
@@ -52,28 +60,36 @@ class MainWindow(QWidget):
         
         self.tray_icon.showMessage("Capture", "Capture initialized!",QSystemTrayIcon.MessageIcon.NoIcon)
     
+    
+    def on_save_requested(self, result):
+        self.save_image_thread(result=result, auto_save=True)
+    
     # ----------- Ocr Processor -----------
     def process_ocr_thread(self, result):
         ocr_worker = OcrWorker(self.ocr_service, result.get('screenshot'))
-        self.run_in_thread(ocr_worker, on_finished=self.on_ocr_finished, on_error=self.on_ocr_error)
+        run_in_thread(self, ocr_worker, on_finished=self.on_ocr_finished, on_error=self.on_ocr_error)
          
     def on_ocr_finished(self, result):
         self.toggle_visibility()
         print("OCR result:", result)
 
         kanjis = result["kanjis"]
-        result['kanjis'] = self.kanji_repo.find_many(kanjis)
+        result['kanjis'] = self.kanji_service.get_all_kanjis(kanjis)
         
         auto_save = self.setting_service.user_settings.get('auto_save', False)
         save_image = self.setting_service.user_settings.get('save_image', False)
-
+        
         if auto_save:
             self.save_image_thread(result, auto_save=True)
         elif save_image:
             self.save_image_thread(result, auto_save=False)
+            
+
 
         self.custom_tab.show_capture(result)
         
+    
+    
     def on_ocr_error(self, msg):
         self.toggle_visibility()
         print("Erro OCR:", msg) 
@@ -102,12 +118,13 @@ class MainWindow(QWidget):
         def on_error(msg):
             QMessageBox.critical(self, "Error", f"Error on capture: \n{msg}")
         
-        self.run_in_thread(worker, on_finished=on_finished, on_error=on_error)
+        run_in_thread(self, worker, on_finished=on_finished, on_error=on_error)
 
     def save_capture_thread(self, result, image_path):
         worker = DbWorker(
             self.capture_service,
             "save_capture",
+            result['raw_text'],
             image_path,
             result["kanjis"]
         )
@@ -116,31 +133,11 @@ class MainWindow(QWidget):
             self.tray_icon.showMessage(
                 "Capture", f"Capture {id} saved successfully!"
             )
+            self.custom_tab.collection_panel.add_capture_to_grid(id)
         
         
-        self.run_in_thread(worker, on_finished=on_finished)
+        run_in_thread(self, worker, on_finished=on_finished)
     
-    def run_in_thread(self, worker: OcrWorker | DbWorker, on_finished=None, on_error=None):
-        self._thread = QThread()
-        
-        worker.moveToThread(self._thread)
-
-        self._thread.started.connect(worker.run)
-        
-        if on_finished:
-            worker.finished.connect(on_finished)
-        if on_error:
-            worker.error.connect(lambda e: QMessageBox.critical(self, "Error", e))
-
-        worker.finished.connect(self._thread.quit)
-        worker.finished.connect(worker.deleteLater)
-        
-        self.threads.append(self._thread)
-        self.workers.append(worker) 
-        
-        self._thread.finished.connect(self._thread.deleteLater)
-
-        self._thread.start()
 
     # ----------- Genearal Functions -----------
     def toggle_visibility(self):    
@@ -169,6 +166,8 @@ class MainWindow(QWidget):
         # Setting panel pos and dimensions
         self.setGeometry(QRect(panel_x, panel_y, panel_width, panel_height))
 
+        self.setFixedSize(QSize(panel_width,panel_height))
+        
         # Customizing panel
         self.setWindowTitle('ToriiKanji')
         self.setWindowFlag (Qt.WindowType.FramelessWindowHint |  # Sem bordas
@@ -176,6 +175,8 @@ class MainWindow(QWidget):
         self.setWindowIcon(QIcon(str(ICON)))
         self.setWindowOpacity(0.92)
         self.setObjectName('main_panel')
+        
+        
         
         label_width = 477
         label_height = 477
@@ -191,8 +192,6 @@ class MainWindow(QWidget):
         label_width,label_height,
         Qt.AspectRatioMode.KeepAspectRatio,
         Qt.TransformationMode.SmoothTransformation)
-        
-
         
         self.background_label.setPixmap(pixmap)
         # Create an opacity effect
@@ -226,7 +225,6 @@ class MainWindow(QWidget):
             self.tray_icon.show()
             
     def event(self, event):
-           
         if isinstance(event, CustomHotkeyEvent):       
             if event.tipo == "exit":
                 QApplication.exit()
