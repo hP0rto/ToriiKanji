@@ -68,7 +68,7 @@ class HoverFrame(QFrame):
     def toggle_selection(self):
         self.selected = not self.selected
         if self.selected:
-            self.setStyleSheet("border: 2px solid #C24338;")  # azul, por exemplo
+            self.setStyleSheet("background-color: #C24338;")  # azul, por exemplo
         else:
             self.setStyleSheet("")
             

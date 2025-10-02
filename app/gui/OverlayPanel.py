@@ -8,7 +8,6 @@ from gui.components.KanjiCard import KanjiCard
 from core.services.kanji_service import KanjiService
 
 from utils.helpers import pixmap_null_handler
-
 class OverlayPanel(QWidget):
     save_requested = pyqtSignal(dict) 
 
@@ -49,8 +48,6 @@ class OverlayPanel(QWidget):
         
         if not self.main_window.setting_service.user_settings.get("auto_save", False):
             self.save_button = create_text_button('Save', on_click=self.on_save_clicked)
-            
-            
 
         self.setLayout(layout)
         
@@ -63,6 +60,22 @@ class OverlayPanel(QWidget):
         
         # show panel
         self.show()
+    
+    @pyqtSlot()  # Declara esta função como um slot
+    def update_ui_from_settings(self):
+        """
+        Atualiza a UI com base nas configurações atuais.
+        """
+        auto_save_enabled = self.main_window.setting_service.user_settings.get("auto_save", False)
+
+        if not auto_save_enabled:
+            if not self.save_button:
+                self.save_button = create_text_button('Save', on_click=self.on_save_clicked)
+                self.layout().addWidget(self.save_button)
+            self.save_button.setVisible(True)
+        else:
+            if self.save_button:
+                self.save_button.setVisible(False)
         
     def on_save_clicked(self):
         """Emite o sinal pedindo pra salvar a captura"""
@@ -71,6 +84,7 @@ class OverlayPanel(QWidget):
         
     def show_capture(self, result):
         print(result)
+        
         self.result = result
         image_path = result.get('image_path') 
         original_pixmap = result.get('pixmap')

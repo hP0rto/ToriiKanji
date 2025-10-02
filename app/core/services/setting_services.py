@@ -47,13 +47,8 @@ class SettingsService(metaclass=SingletonMeta):
         try:
             with open(JSON_PATH, 'r') as file:
                 json_user_settings = json.load(file)
-            
-            self.user_settings['exit_key'] = json_user_settings['exit_key']
-            self.user_settings['capture_key'] = json_user_settings['capture_key']
-            self.user_settings['toggle_key'] = json_user_settings['toggle_key']
-            self.user_settings['auto_save'] = json_user_settings['auto_save']
-            self.user_settings['save_image'] = json_user_settings['save_image']
-            
+                
+            self.user_settings.update(json_user_settings)
         except:
             print(f'Could not reach settings file:{JSON_PATH}')
     

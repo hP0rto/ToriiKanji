@@ -2,8 +2,8 @@ from datetime import datetime
 import os
 from tkinter import Tk
 
-from utils.helpers import get_app_name
 from core.services.setting_services import SettingsService
+from utils.helpers import get_app_name
 from ocr.ScreenCapture import ScreenCapture
 
 from db.repositories.capture_repository import CaptureRepository
@@ -12,7 +12,7 @@ from db.repositories.capture_repository import CaptureRepository
 class CaptureService():
     def __init__(self):
         self.capture_repo = CaptureRepository()
-        
+    
         self.settings_service = SettingsService()
         
         self.save_dir = "captures"
@@ -62,6 +62,4 @@ class CaptureService():
         screencapture_result['screenshot'] = app.screenshot
         
         return screencapture_result
-    
-    
 

@@ -38,6 +38,7 @@ class SaveWorker(QRunnable):
 
 
 class SettingsPanel(QWidget):
+    settings_saved = pyqtSignal()
     def __init__(self, main_window):
         super().__init__()
 
@@ -171,6 +172,7 @@ class SettingsPanel(QWidget):
         self.save_button.setEnabled(True)
         self.save_button.setText("Save")
         QMessageBox.information(self, "Settings", "Settings saved successfully!")
+        self.settings_saved.emit()
         
     def on_save_error(self, error_msg):
         self.save_button.setEnabled(True)
