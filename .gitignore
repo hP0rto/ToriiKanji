@@ -1,6 +1,9 @@
 tesseract/
 database/
 captures/
+/Output/
+/build_assets/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

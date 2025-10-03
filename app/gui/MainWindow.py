@@ -16,8 +16,6 @@ from core.services.hotkey_services import CustomHotkeyEvent, config_hotkey
 
 from gui.components.CustomTabWidget import CustomTabWidget
 
-
-
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -29,9 +27,6 @@ class MainWindow(QWidget):
         self.config_tray()        
         self.panel_settings()
         
-        
-        
-        
         self.ocr_service = OcrService()
         self.capture_service = CaptureService()
         self.setting_service = SettingsService()
@@ -42,13 +37,11 @@ class MainWindow(QWidget):
         overlay = self.custom_tab.overlay_panel  
         overlay.save_requested.connect(self.on_save_requested)
         
-        
         layout = QVBoxLayout()
         
         layout.addWidget(self.custom_tab)
         self.setLayout(layout)
         self.show()
-   
     
     def initialize_capture(self):
         if self.isVisible():
@@ -58,7 +51,7 @@ class MainWindow(QWidget):
         
         self.process_ocr_thread(result)
         
-        self.tray_icon.showMessage("Capture", "Capture initialized!",QSystemTrayIcon.MessageIcon.NoIcon)
+        #self.tray_icon.showMessage("Capture", "Capture initialized!",QSystemTrayIcon.MessageIcon.NoIcon)
     
     
     def on_save_requested(self, result):

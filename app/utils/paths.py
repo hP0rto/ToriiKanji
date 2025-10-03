@@ -4,10 +4,19 @@ import os, sys
 '''
     Arquivo para centralizar acesso de caminhos no codigo
 '''
-BASE_DIR = Path(__file__).resolve().parent.parent  # volta para pasta /app
-DB_PATH = BASE_DIR.parent / 'database' / 'toriikanji.db'
-ASSETS = BASE_DIR.parent / 'assets'
-TESSERACT_PATH = BASE_DIR.parent / 'tesseract' / 'tesseract.exe'
+def resource_path(relative_path):
+    """ Retorna o caminho absoluto para o recurso, funcionando tanto no dev quanto no PyInstaller """
+    try:
+        base_path = Path(sys._MEIPASS)
+    except Exception:
+        base_path = Path(__file__).resolve().parent.parent.parent
+    
+    return base_path / relative_path
+
+
+DB_PATH = resource_path('database/toriikanji.db')
+ASSETS = resource_path('assets')
+TESSERACT_PATH = resource_path('tesseract/tesseract.exe')
 
 
 EXIT_ICON = ASSETS / 'exit_button.svg'
