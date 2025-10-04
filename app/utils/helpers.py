@@ -6,33 +6,29 @@ from core.workers.db_worker import DbWorker
 from core.workers.ocr_worker import OcrWorker
 
 from utils.paths import NO_IMG
+        
+def run_in_thread(worker: OcrWorker | DbWorker, on_finished=None, on_error=None):
+    _thread = QThread()
 
-def run_in_thread(self, worker: OcrWorker | DbWorker, on_finished=None, on_error=None):
-        self._thread = QThread()
-        
-        worker.moveToThread(self._thread)
+    worker.moveToThread(_thread)
 
-        self._thread.started.connect(worker.run)
-        
-        if on_finished:
-            worker.finished.connect(on_finished)
-        if not on_error:
-            worker.error.connect(lambda e: QMessageBox.critical(self, "Error", e))
+    _thread.started.connect(worker.run)
 
-        worker.finished.connect(self._thread.quit)
-        worker.finished.connect(worker.deleteLater)
-        
-        self.threads.append(self._thread)
-        self.workers.append(worker) 
-        
-        self._thread.finished.connect(self._thread.deleteLater)
+    if on_finished:
+        worker.finished.connect(on_finished)
+    if on_error:
+        worker.error.connect(on_error)     
 
-        self._thread.start()
-        
+    worker.finished.connect(_thread.quit)
+    worker.finished.connect(worker.deleteLater)
+    _thread.finished.connect(_thread.deleteLater)
+
+    _thread.start()
+
+    return _thread
         
 def pixmap_null_handler(pixmap: QPixmap): 
     return QPixmap(str(NO_IMG)).scaled(200,200) if pixmap.isNull() else pixmap
-
 
 import win32process, win32gui, win32api
 

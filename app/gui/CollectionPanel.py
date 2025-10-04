@@ -19,6 +19,8 @@ class CollectionPanel(QWidget):
         self.workers = []
         self.main_window = main_window
         
+        self._initial_load_started = False
+        
         self.capture_service = CaptureService()
 
         layout = QVBoxLayout(self) 
@@ -33,13 +35,7 @@ class CollectionPanel(QWidget):
         
         self.grid = QGridLayout(container)
         self.grid.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignVCenter)
-        
-        initial_worker = DbWorker(
-            self.capture_service,
-            'get_captures'
-        )
-        # first fill
-        run_in_thread(self, initial_worker, on_finished=self.fill_list, on_error=lambda msg: print('Error:', msg))
+
         
         scroll_area.setWidget(container)
         
@@ -47,7 +43,26 @@ class CollectionPanel(QWidget):
         
         self.setLayout(layout)
         self.show()
+        
+    def showEvent(self, event):
+        '''
+            Fill list in show event to prevent race condition in __init__ :)
+        '''
+        super().showEvent(event) 
+        
+        if not self._initial_load_started:
+            self._initial_load_started = True
+            
+            initial_worker = DbWorker(
+                self.capture_service,
+                'get_captures'
+            )
 
+            thread = run_in_thread( initial_worker, on_finished=self.fill_list, on_error=lambda msg: print('Error:', msg))
+            
+            self.threads.append(thread)
+            self.workers.append(initial_worker)
+    
     def on_capture_clicked(self, capture):
         print(capture)
         self.main_window.custom_tab.show_capture(capture)
