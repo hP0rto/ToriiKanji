@@ -13,7 +13,7 @@ from core.workers.db_worker import DbWorker
 class CollectionPanel(QWidget):
     COL_NUMBER = 3
     
-    def __init__(self, main_window):
+    def __init__(self, main_window, capture_service):
         super().__init__()
         self.threads = []
         self.workers = []
@@ -21,7 +21,7 @@ class CollectionPanel(QWidget):
         
         self._initial_load_started = False
         
-        self.capture_service = CaptureService()
+        self.capture_service = capture_service
 
         layout = QVBoxLayout(self) 
         

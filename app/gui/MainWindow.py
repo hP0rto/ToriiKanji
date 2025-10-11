@@ -34,7 +34,7 @@ class MainWindow(QWidget):
         self.capture_service.capture_saved.connect(self.on_capture_saved_from_service)
         self.capture_service.error_occurred.connect(self.on_error_from_service)
         
-        self.custom_tab = CustomTabWidget(self)
+        self.custom_tab = CustomTabWidget(self, self.capture_service)
         self.custom_tab.overlay_panel.save_requested.connect(self.capture_service.save_capture_from_ui)
         
         layout = QVBoxLayout()
