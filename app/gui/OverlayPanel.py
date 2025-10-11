@@ -16,18 +16,19 @@ class OverlayPanel(QWidget):
         self.main_window = main_window # dependency injection 👍    
         self.result = None
         self.kanji_service = KanjiService()
-        
-        select = QComboBox()
-        select.addItems(["Opção 1", "Opção 2", "Opção 3"])
+
         
         # create layouts
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         
-        # sets widget and layouts
-        layout.addWidget(select)
-        
+        splitter = QSplitter(Qt.Orientation.Vertical)
+
         self.setLayout(layout)
+        
+        
+        top_container = QWidget()
+        top_layout = QVBoxLayout(top_container)
         
         self.capture_label = QLabel("No capture made")
         self.capture_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -37,6 +38,13 @@ class OverlayPanel(QWidget):
         self.text_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.text_label.setStyleSheet('font-size: 20px')
         
+        top_layout.addWidget(self.capture_label)
+        top_layout.addWidget(self.text_label)
+
+
+        bottom_container = QWidget()
+        bottom_layout = QVBoxLayout(bottom_container)
+        
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         
@@ -44,24 +52,24 @@ class OverlayPanel(QWidget):
         self.kanjis_layout = QVBoxLayout(container)
         
         scroll_area.setWidget(container)
+        
+        bottom_layout.addWidget(scroll_area)
+        
+        splitter.addWidget(top_container)
+        splitter.addWidget(bottom_container)
+        splitter.setSizes([self.height() // 2, self.height() // 2])
+
+        layout.addWidget(splitter)
+        
         self.save_button = None
         
         if not self.main_window.setting_service.user_settings.get("auto_save", False):
             self.save_button = create_text_button('Save', on_click=self.on_save_clicked)
-
-        self.setLayout(layout)
-        
-        layout.addWidget(self.capture_label)
-        layout.addWidget(self.text_label)
-        layout.addWidget(scroll_area)
-        if self.save_button:
             layout.addWidget(self.save_button)
-        
-        
-        # show panel
+
         self.show()
     
-    @pyqtSlot()  # Declara esta função como um slot
+    @pyqtSlot()
     def update_ui_from_settings(self):
         """
         Atualiza a UI com base nas configurações atuais.
@@ -92,17 +100,14 @@ class OverlayPanel(QWidget):
         if image_path:
             original_pixmap = pixmap_null_handler(QPixmap(image_path))
         
-        self.capture_label.setPixmap(original_pixmap)
 
-
-        
-        self.capture_label.pixmap().scaled(
-            400,400,
+        scaled_pixmap = original_pixmap.scaled(
+            self.capture_label.size(),
             Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.SmoothTransformation
         )
         
-        self.capture_label.setAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter)
+        self.capture_label.setPixmap(scaled_pixmap)
         
         kanjis = result.get('kanjis', self.kanji_service.get_all_kanji_capture(result.get('id')))
         
@@ -110,9 +115,6 @@ class OverlayPanel(QWidget):
 
         self.text_label.setFixedWidth(self.width())
         self.text_label.setText(normalized_text)
-        self.text_label.setWordWrap(True)
-        self.text_label.setAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignTop)  
-
         
         self.show_result(kanjis)
         
