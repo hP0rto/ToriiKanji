@@ -1,3 +1,4 @@
+import os
 from PyQt6.QtCore import  QThread
 from PyQt6.QtWidgets import QMessageBox
 from PyQt6.QtGui import QPixmap
@@ -32,11 +33,30 @@ def pixmap_null_handler(pixmap: QPixmap):
 
 import win32process, win32gui, win32api
 
+    
 def get_app_name():
-    hwnd = win32gui.GetForegroundWindow()
-    _, pid = win32process.GetWindowThreadProcessId(hwnd)
-    h_process = win32api.OpenProcess(0x1000, False, pid)
-    exe_path = win32process.GetModuleFileNameEx(h_process, 0)
-    print("Nome exe:", exe_path)
-    info = win32api.GetFileVersionInfo(exe_path, "\\StringFileInfo\\040904b0\\FileDescription")
-    print("Nome amigável:", info)
+    try:
+        hwnd = win32gui.GetForegroundWindow()
+        _, pid = win32process.GetWindowThreadProcessId(hwnd)
+        h_process = win32api.OpenProcess(0x1000, False, pid)
+        exe_path = win32process.GetModuleFileNameEx(h_process, 0)
+        
+        # Tenta pegar o "nome bonito" (FileDescription)
+        try:
+            info = win32api.GetFileVersionInfo(exe_path, "\\StringFileInfo\\040904b0\\FileDescription")
+            if info: # Se encontrou o nome bonito, retorna ele
+                return info
+        except Exception:
+            # Se deu erro ao buscar o nome bonito, não faz nada e vai para o plano B
+            pass
+
+        # PLANO B: Se não encontrou o nome bonito, usa o nome do executável
+        if exe_path:
+            base_name = os.path.basename(exe_path)
+            # Remove a extensão .exe e retorna o nome limpo
+            friendly_name = os.path.splitext(base_name)[0]
+            return friendly_name
+            
+    except Exception as e:
+        print(f"Erro ao tentar obter o nome do app: {e}")
+        return None # Retorna None em caso de qualquer outro erro

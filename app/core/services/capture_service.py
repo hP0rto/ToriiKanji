@@ -11,7 +11,7 @@ from core.services.kanji_service import KanjiService
 from core.workers.db_worker import DbWorker
 from core.workers.ocr_worker import OcrWorker
 
-from utils.helpers import get_app_name, run_in_thread
+from utils.helpers import run_in_thread
 from ocr.ScreenCapture import ScreenCapture
 from db.repositories.capture_repository import CaptureRepository
 
@@ -20,7 +20,7 @@ class CaptureService(QObject):
     capture_saved = pyqtSignal(int)
     image_saved = pyqtSignal(str)
     error_occurred = pyqtSignal(str)
-    
+
     def __init__(self):
         super().__init__()
         self.kanji_service = KanjiService() # Instancie o KanjiService
@@ -41,7 +41,10 @@ class CaptureService(QObject):
 
         screenshot_result = self._start_screenshot()
         if screenshot_result and screenshot_result.get('screenshot'):
-            self._run_ocr_in_thread(screenshot_result.get('screenshot'))
+            self._run_ocr_in_thread(
+                screenshot_result.get('screenshot'),
+                screenshot_result.get('captured_app_name')
+            )
         else:
             self.main_window.toggle_visibility()
             
@@ -49,19 +52,23 @@ class CaptureService(QObject):
         root = Tk()
         app = ScreenCapture(root)
         root.mainloop()
+    
         
         return {
+            'captured_app_name': app.captured_app_name,
             'file_name': app.file_name,
             'screenshot': app.screenshot
         }
 
-    def _run_ocr_in_thread(self, image):
+    def _run_ocr_in_thread(self, image, captured_app_name):
         thread = QThread()
         worker = OcrWorker(self.ocr_service, image)
         
+        on_finished_callback = lambda ocr_result: self._handle_ocr_result(ocr_result, captured_app_name)
+        
         thread = run_in_thread(
             worker=worker,
-            on_finished=self._handle_ocr_result,
+            on_finished=on_finished_callback,
             on_error=self._handle_error
             )
         
@@ -69,36 +76,37 @@ class CaptureService(QObject):
         self.threads.append(thread)
         self.workers.append(worker)
 
-    def _handle_ocr_result(self, result):
+    def _handle_ocr_result(self, result, captured_app_name):
         """ Chamado quando o OCR termina. Decide o que fazer a seguir. """
         kanjis = result["kanjis"]
         result['kanjis'] = self.kanji_service.get_all_kanjis(kanjis)
-        
+  
+        result['media_name'] = captured_app_name or 'Unknown'
+    
         self.ocr_finished.emit(result)
+            
+    def _handle_error(self, msg):
+        # Propaga o erro para a UI através de um sinal
+        self.error_occurred.emit(msg)    
+
+    
+    @pyqtSlot(dict, int) # Agora recebe o resultado E o media_id
+    def start_save_flow(self, result_data, media_id):
+
+        print(f"Serviço: Iniciando fluxo de salvamento com media_id: {media_id}")
+        result_data['media_id'] = media_id
         
         auto_save = self.settings_service.user_settings.get('auto_save', False)
         save_image = self.settings_service.user_settings.get('save_image', False)
         
         if auto_save:
             print("Serviço: Iniciando fluxo de salvamento automático.")
-            self._run_full_save_in_thread(result)
+            self._run_full_save_in_thread(result_data)
         elif save_image:
-            self.save_image_to_disk(result['pixmap'])
-            
-    def _handle_error(self, msg):
-        # Propaga o erro para a UI através de um sinal
-        self.error_occurred.emit(msg)    
-
-    @pyqtSlot(dict)
-    def save_capture_from_ui(self, result_data):
-        """
-        Slot público para iniciar o processo de salvamento a partir de uma ação da UI
-        (ex: clique no botão 'Save').
-        De acordo com a regra de negócio, isso SEMPRE salva a imagem e a captura.
-        """
-        print("Serviço: Iniciando fluxo de salvamento completo a pedido da UI.")
-        # Simplesmente chama o método interno que lida com o fluxo completo.
-        self._run_full_save_in_thread(result_data)
+            self.save_image_to_disk(result_data['pixmap'])
+        elif not auto_save and not save_image:
+            self._run_full_save_in_thread(result_data)
+        
     def _run_save_capture_in_disk_in_thread(self,result):
         worker = DbWorker(self, 'save_image_to_disk', result['pixmap'])
         
@@ -133,7 +141,8 @@ class CaptureService(QObject):
             "save_capture_to_db", # Renomeei para ser mais claro
             result['raw_text'],
             image_path,
-            result["kanjis"]
+            result["kanjis"],
+            result['media_id']
         )
         
         def on_finished(id):
@@ -183,18 +192,4 @@ class CaptureService(QObject):
         
     def find_by_id_capture(self, id):
         return self.capture_repo.select_capture_by_id(id)
-    
-    def start_screenshot(self):
-        root = Tk()
-        app = ScreenCapture(root)
-        root.mainloop()
-        
-        get_app_name()
-        
-        screencapture_result = {}
-        
-        screencapture_result['file_name'] = app.file_name
-        screencapture_result['screenshot'] = app.screenshot
-        
-        return screencapture_result
 

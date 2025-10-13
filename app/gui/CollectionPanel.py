@@ -7,13 +7,13 @@ from gui.components.HoverFrame import HoverFrame
 
 from utils.helpers import run_in_thread
 
-from core.services.capture_service import CaptureService
+from core.services.media_service import MediaService
 from core.workers.db_worker import DbWorker
 
 class CollectionPanel(QWidget):
     COL_NUMBER = 3
     
-    def __init__(self, main_window, capture_service):
+    def __init__(self, main_window, capture_service, media_service):
         super().__init__()
         self.threads = []
         self.workers = []
@@ -22,6 +22,7 @@ class CollectionPanel(QWidget):
         self._initial_load_started = False
         
         self.capture_service = capture_service
+        self.media_service = media_service
 
         layout = QVBoxLayout(self) 
         
@@ -71,7 +72,7 @@ class CollectionPanel(QWidget):
         for index, capture in enumerate(result):
             row, col = self.get_row_and_col(index)
 
-            frame = HoverFrame(capture)
+            frame = HoverFrame(capture, self.media_service)
             frame.clicked.connect(self.on_capture_clicked)
             
             self.grid.addWidget(frame, row, col)
@@ -82,7 +83,7 @@ class CollectionPanel(QWidget):
 
         row, col  = self.get_row_and_col(self.grid.count())
 
-        frame = HoverFrame(capture)
+        frame = HoverFrame(capture, self.media_service)
         frame.clicked.connect(self.on_capture_clicked)
         
         self.grid.addWidget(frame, row, col)

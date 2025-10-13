@@ -6,15 +6,16 @@ from gui.CollectionPanel import CollectionPanel
 from gui.SettingsPanel import SettingsPanel
 from gui.OverlayPanel import OverlayPanel
 class CustomTabWidget(QWidget):
-    def __init__(self, main_window, capture_service):
+    def __init__(self, main_window, capture_service, media_service):
         super().__init__()
         self.main_window = main_window
         self.capture_service = capture_service
+        self.media_service = media_service
         layout = QVBoxLayout(self)
 
         self.overlay_panel = OverlayPanel(self.main_window)
         self.settings_panel = SettingsPanel(self.main_window)
-        self.collection_panel = CollectionPanel(self.main_window, self.capture_service)
+        self.collection_panel = CollectionPanel(self.main_window, self.capture_service, self.media_service)
     
         self.settings_panel.settings_saved.connect(self.overlay_panel.update_ui_from_settings)
         

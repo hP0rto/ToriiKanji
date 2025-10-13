@@ -9,7 +9,7 @@ from datetime import datetime
 class HoverFrame(QFrame):
     clicked = pyqtSignal(object)
     
-    def __init__(self,capture):
+    def __init__(self,capture, media_service):
         super().__init__()
         self.setFixedSize(150, 180)
         self.setAutoFillBackground(True)
@@ -20,6 +20,7 @@ class HoverFrame(QFrame):
         
         self.selected = False
         
+        self.media_service = media_service
 
         # paleta inicial
         pal = self.palette()
@@ -62,8 +63,12 @@ class HoverFrame(QFrame):
         if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
             self.toggle_selection()
         else:
+            media = self.media_service.get_media_by_id(self.capture['media_id'])
+            if media:
+                self.capture['media_name'] = media['title']
             self.clicked.emit(self.capture)
         super().mousePressEvent(event)
+    
     
     def toggle_selection(self):
         self.selected = not self.selected

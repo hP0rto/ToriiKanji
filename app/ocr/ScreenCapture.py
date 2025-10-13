@@ -5,9 +5,16 @@ import pyautogui
 
 from datetime import datetime
 
+from utils.helpers import get_app_name
+
 class ScreenCapture:
     def __init__(self, root):
         self.root = root
+        
+        self.captured_app_name = get_app_name()
+        print(f"ScreenCapture: App em foco detectado -> {self.captured_app_name}")
+        
+        
         self.canvas = Canvas(root, cursor="cross", bg="gray11")
         self.canvas.pack(fill=tk.BOTH, expand=tk.YES)
 

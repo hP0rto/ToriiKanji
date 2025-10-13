@@ -4,12 +4,14 @@ from PyQt6.QtGui import QIcon, QAction, QPixmap
 
 from utils.paths import BACKGROUND_IMG, ICON
 
+from core.services.media_service import MediaService
 from core.services.kanji_service import KanjiService
 from core.services.setting_services import SettingsService
 from core.services.capture_service import CaptureService
 from core.services.ocr_service import OcrService
 from core.services.hotkey_services import CustomHotkeyEvent, config_hotkey
 
+from gui.components.MediaConfirmationDialog import MediaConfirmationDialog
 from gui.components.CustomTabWidget import CustomTabWidget
 
 class MainWindow(QWidget):
@@ -23,6 +25,7 @@ class MainWindow(QWidget):
         self.capture_service = CaptureService()
         self.setting_service = SettingsService()
         self.kanji_service = KanjiService()
+        self.media_service = MediaService()
 
         self.capture_service.main_window = self
         
@@ -34,8 +37,8 @@ class MainWindow(QWidget):
         self.capture_service.capture_saved.connect(self.on_capture_saved_from_service)
         self.capture_service.error_occurred.connect(self.on_error_from_service)
         
-        self.custom_tab = CustomTabWidget(self, self.capture_service)
-        self.custom_tab.overlay_panel.save_requested.connect(self.capture_service.save_capture_from_ui)
+        self.custom_tab = CustomTabWidget(self, self.capture_service, self.media_service)
+        self.custom_tab.overlay_panel.save_requested.connect(self.on_manual_save_requested)
         
         layout = QVBoxLayout()
         layout.addWidget(self.custom_tab)
@@ -45,6 +48,8 @@ class MainWindow(QWidget):
     def initialize_capture(self):
         self.capture_service.start_full_capture_flow()    
     
+    # --------------- Capture OCR ----------------------
+    
     @pyqtSlot(dict)
     def on_ocr_finished_from_service(self, result):
         """
@@ -53,6 +58,10 @@ class MainWindow(QWidget):
         self.toggle_visibility() # Mostra a janela
         print("OCR result from service:", result)
         self.custom_tab.show_capture(result)
+        
+        if self.setting_service.user_settings.get('auto_save', False):
+            # Se o auto-save estiver ligado, a MainWindow inicia o fluxo de confirmação.
+            self.initiate_media_confirmation(result)
         
     @pyqtSlot(int)
     def on_capture_saved_from_service(self, capture_id):
@@ -67,7 +76,39 @@ class MainWindow(QWidget):
         self.toggle_visibility()
         print("Erro do serviço:", msg) 
         QMessageBox.critical(self, "Error", f"An error occurred: \n{msg}")
-    
+
+    @pyqtSlot(dict)
+    def on_manual_save_requested(self, result):
+        """
+        Slot chamado quando o usuário clica no botão "Save" no OverlayPanel.
+        """
+        print(f"MainWindow: Pedido de salvamento manual recebido. result: {result}")
+
+        media_id = result.get('media_id')
+        if media_id is not None:
+            print("Salvamento manual autorizado. Chamando o serviço.")
+            # Chama diretamente o serviço de salvamento.
+            self.capture_service.start_save_flow(result, media_id)
+        else:
+            print("Erro: Tentativa de salvamento manual sem um media_id.")
+        
+    def initiate_media_confirmation(self, ocr_result):
+        """
+        Abre o diálogo de confirmação de mídia. Esta função é o ponto central
+        para qualquer tipo de salvamento.
+        """
+        detected_media_name = ocr_result['media_name']
+        all_media = self.media_service.get_all_media()
+        
+        dialog = MediaConfirmationDialog(detected_media_name, all_media, self.media_service, self)
+        
+        # Conecta o sinal 'accepted' do diálogo para finalmente chamar o serviço de salvamento
+        dialog.accepted.connect(
+            lambda media_id: self.capture_service.start_save_flow(ocr_result, media_id)
+        )
+        
+        # O exec() bloqueia até o usuário fechar o diálogo.
+        dialog.exec()
 
     # ----------- Genearal Functions -----------
     def toggle_visibility(self):    
