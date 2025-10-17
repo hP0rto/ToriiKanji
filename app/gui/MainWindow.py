@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QApplication, QSystemTrayIcon, QMenu, QLabel, QGraphicsOpacityEffect, QMessageBox
+from PyQt6.QtWidgets import QDialog, QWidget, QVBoxLayout, QApplication, QSystemTrayIcon, QMenu, QLabel, QGraphicsOpacityEffect, QMessageBox
 from PyQt6.QtCore import Qt, QRect, QSize, pyqtSlot
 from PyQt6.QtGui import QIcon, QAction, QPixmap
 
@@ -36,9 +36,16 @@ class MainWindow(QWidget):
         self.capture_service.ocr_finished.connect(self.on_ocr_finished_from_service)
         self.capture_service.capture_saved.connect(self.on_capture_saved_from_service)
         self.capture_service.error_occurred.connect(self.on_error_from_service)
+        self.capture_service.media_confirmation_required.connect(self.initiate_media_confirmation)
+        
         
         self.custom_tab = CustomTabWidget(self, self.capture_service, self.media_service)
         self.custom_tab.overlay_panel.save_requested.connect(self.on_manual_save_requested)
+        # conecta sinal de capture_saved ao overlay para atualizar o botão quando o serviço terminar de salvar
+        try:
+            self.capture_service.capture_saved.connect(self.custom_tab.overlay_panel.on_capture_saved)
+        except Exception:
+            pass
         
         layout = QVBoxLayout()
         layout.addWidget(self.custom_tab)
@@ -59,16 +66,13 @@ class MainWindow(QWidget):
         print("OCR result from service:", result)
         self.custom_tab.show_capture(result)
         
-        if self.setting_service.user_settings.get('auto_save', False):
-            # Se o auto-save estiver ligado, a MainWindow inicia o fluxo de confirmação.
-            self.initiate_media_confirmation(result)
-        
     @pyqtSlot(int)
     def on_capture_saved_from_service(self, capture_id):
         """
         Atualiza a UI quando uma captura é salva.
         """
-        self.tray_icon.showMessage("Capture", f"Capture {capture_id} saved successfully!")
+        from utils.i18n import t
+        self.tray_icon.showMessage("Capture", t('capture_saved', id=capture_id))
         self.custom_tab.collection_panel.add_capture_to_grid(capture_id)
     
     @pyqtSlot(str)
@@ -88,7 +92,7 @@ class MainWindow(QWidget):
         if media_id is not None:
             print("Salvamento manual autorizado. Chamando o serviço.")
             # Chama diretamente o serviço de salvamento.
-            self.capture_service.start_save_flow(result, media_id)
+            self.capture_service.start_save_flow(result, media_id, is_manual=True)
         else:
             print("Erro: Tentativa de salvamento manual sem um media_id.")
         
@@ -107,9 +111,21 @@ class MainWindow(QWidget):
             lambda media_id: self.capture_service.start_save_flow(ocr_result, media_id)
         )
         
-        # O exec() bloqueia até o usuário fechar o diálogo.
-        dialog.exec()
-
+        if dialog.exec() == QDialog.DialogCode.Rejected:
+            # Se o usuário cancelou, e a memória do serviço não está vazia, usa a última mídia
+            if self.capture_service.last_confirmed_media_id is not None:
+                last_id = self.capture_service.last_confirmed_media_id
+                
+                media = self.media_service.get_media_by_id(last_id)
+                if media:
+                    self.custom_tab.overlay_panel.update_displayed_media(media['title'], last_id)
+                
+                self.capture_service.start_save_flow(
+                    ocr_result, 
+                    last_id
+                )
+                
+        
     # ----------- Genearal Functions -----------
     def toggle_visibility(self):    
         if self.isVisible():
@@ -178,22 +194,22 @@ class MainWindow(QWidget):
         self.background_label.setAlignment(Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter)
     
     def config_tray(self):
-            self.tray_icon = QSystemTrayIcon(self)
-            self.tray_icon.setIcon(QIcon(str(BACKGROUND_IMG)))
-            self.tray_menu = QMenu()
+        from utils.i18n import t
+        self.tray_icon = QSystemTrayIcon(self)
+        self.tray_icon.setIcon(QIcon(str(BACKGROUND_IMG)))
+        self.tray_menu = QMenu()
             
-            show_action = QAction("Mostrar", self)
-            show_action.triggered.connect(self.show)
-            self.tray_menu.addAction(show_action)
+        show_action = QAction(t('show'), self)
+        show_action.triggered.connect(self.show)
+        self.tray_menu.addAction(show_action)
         
+        quit_action = QAction(t('exit'), self)
+        quit_action.triggered.connect(QApplication.exit)
+        self.tray_menu.addAction(quit_action)
             
-            quit_action = QAction("Sair", self)
-            quit_action.triggered.connect(QApplication.exit)
-            self.tray_menu.addAction(quit_action)
-            
-            self.tray_icon.setContextMenu(self.tray_menu)
+        self.tray_icon.setContextMenu(self.tray_menu)
 
-            self.tray_icon.show()
+        self.tray_icon.show()
             
     def event(self, event):
         if isinstance(event, CustomHotkeyEvent):       

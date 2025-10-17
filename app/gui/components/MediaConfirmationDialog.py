@@ -1,6 +1,8 @@
 from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, 
                                QLineEdit, QPushButton, QSpacerItem, QSizePolicy)
 from PyQt6.QtCore import pyqtSignal
+from utils.i18n import t
+
 
 class MediaConfirmationDialog(QDialog):
     # Sinal que emitirá o ID da mídia confirmada quando o usuário aceitar
@@ -8,7 +10,7 @@ class MediaConfirmationDialog(QDialog):
 
     def __init__(self, detected_media_name, all_media, media_service, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Confirmar Mídia de Origem")
+        self.setWindowTitle(t('confirm_removal_title'))
         self.setModal(True) # Impede interação com a janela principal
 
         self.media_service = media_service
@@ -20,8 +22,8 @@ class MediaConfirmationDialog(QDialog):
         
         # Seção de Detecção Automática
         detected_layout = QHBoxLayout()
-        detected_layout.addWidget(QLabel(f"Mídia detectada: <b>{detected_media_name}</b>"))
-        self.confirm_detected_button = QPushButton("✓ Confirmar")
+        detected_layout.addWidget(QLabel(f"Detected media: <b>{detected_media_name}</b>"))
+        self.confirm_detected_button = QPushButton("✓ Confirm")
         detected_layout.addWidget(self.confirm_detected_button)
         layout.addLayout(detected_layout)
 
@@ -29,17 +31,17 @@ class MediaConfirmationDialog(QDialog):
 
         # Seção de Seleção Manual
         manual_layout = QVBoxLayout()
-        manual_layout.addWidget(QLabel("Ou selecione uma mídia existente:"))
-        
+        manual_layout.addWidget(QLabel("Or select an existing media:"))
+            
         self.media_combo = QComboBox()
         self.media_combo.setEditable(True) # Permite que o usuário digite um novo nome
-        self.media_combo.setPlaceholderText("Digite ou selecione uma mídia...")
+        self.media_combo.setPlaceholderText("Type or select a media...")
         for media in all_media:
             self.media_combo.addItem(media['title'], media['id'])
-        
+            
         manual_layout.addWidget(self.media_combo)
-        
-        self.confirm_manual_button = QPushButton("Salvar com esta Mídia")
+            
+        self.confirm_manual_button = QPushButton("Save with this Media")
         manual_layout.addWidget(self.confirm_manual_button)
         layout.addLayout(manual_layout)
 

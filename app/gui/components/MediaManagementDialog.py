@@ -1,6 +1,8 @@
 from PyQt6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QListWidget, 
                                QLineEdit, QPushButton, QMessageBox, QListWidgetItem)
 from PyQt6.QtCore import pyqtSignal, Qt
+from utils.i18n import t
+
 
 class MediaManagementDialog(QDialog):
     # Sinal que emitirá o ID da mídia confirmada quando o usuário aceitar
@@ -8,7 +10,7 @@ class MediaManagementDialog(QDialog):
 
     def __init__(self, media_service, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Apps Maneger")
+        self.setWindowTitle(t('apps_manager'))
         self.setModal(True)
         self.media_service = media_service
 
@@ -16,25 +18,25 @@ class MediaManagementDialog(QDialog):
         layout = QVBoxLayout(self)
 
         # --- Lista de Mídias ---
-        layout.addWidget(QLabel("Existing apps"))
+        layout.addWidget(QLabel(t('existing_apps')))
         self.media_list = QListWidget()
         self.media_list.itemDoubleClicked.connect(self.on_select_media) # Duplo clique para selecionar
         layout.addWidget(self.media_list)
 
         # --- Botões de Ação para a Lista ---
         list_actions_layout = QHBoxLayout()
-        self.select_button = QPushButton("✓ Select App")
-        self.delete_button = QPushButton("✗ Remove App")
+        self.select_button = QPushButton(t('select_app'))
+        self.delete_button = QPushButton(t('remove_app'))
         list_actions_layout.addWidget(self.select_button)
         list_actions_layout.addWidget(self.delete_button)
         layout.addLayout(list_actions_layout)
 
         # --- Seção para Adicionar Nova Mídia ---
-        layout.addWidget(QLabel("Add new app:"))
+        layout.addWidget(QLabel(t('add_new_app')))
         new_media_layout = QHBoxLayout()
         self.new_media_input = QLineEdit()
-        self.new_media_input.setPlaceholderText("New app name...")
-        self.add_button = QPushButton("+ Add")
+        self.new_media_input.setPlaceholderText(t('new_app_placeholder'))
+        self.add_button = QPushButton(t('add'))
         new_media_layout.addWidget(self.new_media_input)
         new_media_layout.addWidget(self.add_button)
         layout.addLayout(new_media_layout)
@@ -70,15 +72,14 @@ class MediaManagementDialog(QDialog):
         """ Deleta a mídia selecionada após confirmação. """
         current_item = self.media_list.currentItem()
         if not current_item:
-            QMessageBox.warning(self, "Atenção", "Selecione uma mídia para remover.")
+            QMessageBox.warning(self, t('attention'), "Select a media to remove.")
             return
 
         media_data = current_item.data(Qt.ItemDataRole.UserRole)
         confirm = QMessageBox.question(
             self,
-            "Confirmar Remoção",
-            f"Tem certeza que deseja remover a mídia '{media_data['title']}'?\n"
-            "As capturas associadas a ela não serão removidas, mas ficarão sem mídia.",
+            t('confirm_removal_title'),
+            t('confirm_removal_body', title=media_data['title']),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
 
@@ -86,13 +87,13 @@ class MediaManagementDialog(QDialog):
             self.media_service.delete_media(media_data['id'])
             # Remove o item da lista visualmente
             self.media_list.takeItem(self.media_list.row(current_item))
-            QMessageBox.information(self, "Sucesso", "Mídia removida com sucesso.")
+            QMessageBox.information(self, t('success'), t('media_removed'))
 
     def on_add_media(self):
         """ Adiciona uma nova mídia a partir do campo de texto. """
         new_title = self.new_media_input.text().strip()
         if not new_title:
-            QMessageBox.warning(self, "Atenção", "O nome da mídia não pode ser vazio.")
+            QMessageBox.warning(self, t('attention'), t('empty_media_name'))
             return
 
         # O serviço já lida com a lógica de não criar duplicatas

@@ -18,11 +18,13 @@ class SettingsService(metaclass=SingletonMeta):
     # Singleton
     def __init__(self):
         self.user_settings = {
-                'exit_key': 'f4',
-                'capture_key': 'f9',
-                'toggle_key': 'f10',
-                'auto_save' : False,
-                'save_image' : False,
+            'exit_key': 'f4',
+            'capture_key': 'f9',
+            'toggle_key': 'f10',
+            'auto_save': False,
+            'save_image': False,
+            'show_media_dialog': True,  # Nova opção para mostrar ou não o diálogo de mídia no auto_save
+            'lang': 'en'
         }
 
         if not os.path.exists(JSON_PATH):

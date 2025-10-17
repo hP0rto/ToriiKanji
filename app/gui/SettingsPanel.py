@@ -96,41 +96,51 @@ class SettingsPanel(QWidget):
         main_layout.addWidget(title2)
         
         
+
         options = [
             ("Save capture automatically", "auto_save"),
             ("Save image captures on disk", "save_image"),
+            ("Show media dialog on auto-save", "show_media_dialog")
         ]
 
-        grid = QGridLayout()
-        grid.setSpacing(12)
-        grid.setColumnStretch(0, 3)
-        grid.setColumnStretch(1, 1)
+        self.saving_grid = QGridLayout()
+        self.saving_grid.setSpacing(12)
+        self.saving_grid.setColumnStretch(0, 3)
+        self.saving_grid.setColumnStretch(1, 1)
 
         self.enable_labels = {}
 
         for row, (label_text, key) in enumerate(options):
             state = self.setting_service.user_settings.get(key, False)
-            
             label = QLabel(label_text)
             label.setStyleSheet("color: white; font-size: 14px;")
-            
             enable_label = QLabel('Enable' if state else 'Disable')
             enable_label.setStyleSheet("color: white; font-size: 14px; padding-right: 10px;font-weight: bold;")
-            
             switch = Switch()
             switch.setChecked(state)
             switch.clicked.connect(lambda check, enable_lab=enable_label, key=key: self.on_switch_changed(check,enable_lab,key))
             self.inputs[key] = switch
-
             self.enable_labels[key] = enable_label
+            self.saving_grid.addWidget(label, row, 0, alignment=Qt.AlignmentFlag.AlignLeft)
+            self.saving_grid.addWidget(enable_label, row, 1, alignment=Qt.AlignmentFlag.AlignLeft)
+            self.saving_grid.addWidget(switch, row, 1, alignment=Qt.AlignmentFlag.AlignRight)
 
-            grid.addWidget(label, row, 0, alignment=Qt.AlignmentFlag.AlignLeft)
-            grid.addWidget(enable_label, row, 1, alignment=Qt.AlignmentFlag.AlignLeft)
-            grid.addWidget(switch, row, 1, alignment=Qt.AlignmentFlag.AlignRight)
+        # Adiciona o switch para show_media_dialog, mas só mostra se auto_save estiver ativado
+        # self.media_dialog_label = QLabel('Show media dialog on auto-save')
+        # self.media_dialog_label.setStyleSheet("color: white; font-size: 14px;")
+        # self.media_dialog_switch = Switch()
+        # media_dialog_state = self.setting_service.user_settings.get('show_media_dialog', True)
+        # self.media_dialog_switch.setChecked(media_dialog_state)
+        # self.media_dialog_switch.clicked.connect(lambda check: self.on_media_dialog_switch_changed(check))
+        # self.inputs['show_media_dialog'] = self.media_dialog_switch
+
+        # Só adiciona ao grid se auto_save estiver ativado
+        # if self.inputs["auto_save"].isChecked():
+        #     self.saving_grid.addWidget(self.media_dialog_label, len(options), 0, alignment=Qt.AlignmentFlag.AlignLeft)
+        #     self.saving_grid.addWidget(self.media_dialog_switch, len(options), 1, alignment=Qt.AlignmentFlag.AlignRight)
 
         self.on_switch_changed(self.inputs["auto_save"].isChecked(), self.enable_labels["auto_save"], key="auto_save")
-        
-        main_layout.addLayout(grid)
+        main_layout.addLayout(self.saving_grid)
                         
         # ---------- Other Settings Section ----------
         self.save_button = create_text_button('Save', on_click=self.save_settings)
@@ -142,19 +152,31 @@ class SettingsPanel(QWidget):
 
     def on_switch_changed(self, checked, enable_label, key):
         enable_label.setText('Enable' if checked else 'Disable')
-        
+
         if key == "auto_save":
-            dependent_switch = self.inputs["save_image"]  # exemplo de outro switch
-            dependent_label = self.enable_labels["save_image"]
+            save_switch = self.inputs["save_image"]
+            save_label = self.enable_labels["save_image"]
+            
+            show_media_switch = self.inputs["show_media_dialog"]
+            show_media_label = self.enable_labels["show_media_dialog"]
 
             if checked:
-                dependent_switch.setChecked(True)
-                dependent_switch.setEnabled(False)  # bloqueia interação
-                dependent_label.setText("Enable")
-                dependent_label.setStyleSheet("color: #aaa; font-size: 14px; padding-right: 10px;font-weight: bold;")  # fica cinza
+                save_switch.setChecked(True)
+                save_switch.setEnabled(False)
+                save_label.setText("Enable")
+                save_label.setStyleSheet("color: #aaa; font-size: 14px; padding-right: 10px;font-weight: bold;")
+
+                show_media_switch.setEnabled(True)
+                show_media_label.setStyleSheet("color: #aaa; font-size: 14px; padding-right: 10px;font-weight: bold;")
             else:
-                dependent_switch.setEnabled(True)  # libera interação
-                dependent_label.setStyleSheet("color: white; font-size: 14px; padding-right: 10px;font-weight: bold;")
+                save_switch.setEnabled(True)
+                save_label.setStyleSheet("color: white; font-size: 14px; padding-right: 10px;font-weight: bold;")
+                show_media_switch.setEnabled(False)
+                show_media_label.setStyleSheet("color: #aaa; font-size: 14px; padding-right: 10px;font-weight: bold;")
+                
+    def on_media_dialog_switch_changed(self, checked):
+        # Atualiza o valor na configuração
+        self.setting_service.edit_settings_file('show_media_dialog', checked)
         
     def save_settings(self):
         self.save_button.setEnabled(False)
@@ -171,19 +193,15 @@ class SettingsPanel(QWidget):
     def on_save_finished(self):
         self.save_button.setEnabled(True)
         self.save_button.setText("Save")
-        QMessageBox.information(self, "Settings", "Settings saved successfully!")
+        from utils.i18n import t
+        QMessageBox.information(self, t('settings'), "Settings saved successfully!")
         self.settings_saved.emit()
         
     def on_save_error(self, error_msg):
         self.save_button.setEnabled(True)
         self.save_button.setText("Save")
-        QMessageBox.critical(self, "Error", f"Error saving settings:\n{error_msg}")
-        
-    
-    # def change_key(self, hotkey_input: HotkeyLineEdit):
-    #     if hotkey_input.text():
-    #         self.setting_service.edit_settings_file(hotkey_input.objectName(), hotkey_input.text())
-    #         update_hotkey(self.main_window) 
+        from utils.i18n import t
+        QMessageBox.critical(self, t('error'), f"Error saving settings:\n{error_msg}")
             
                
             

@@ -20,13 +20,16 @@ class CaptureService(QObject):
     capture_saved = pyqtSignal(int)
     image_saved = pyqtSignal(str)
     error_occurred = pyqtSignal(str)
+    media_confirmation_required = pyqtSignal(dict, str)
 
     def __init__(self):
         super().__init__()
-        self.kanji_service = KanjiService() # Instancie o KanjiService
+        self.kanji_service = KanjiService() 
         self.ocr_service = OcrService()   
         self.capture_repo = CaptureRepository()
         self.settings_service = SettingsService()
+        
+        self.last_confirmed_media_id = None
         
         self.save_dir = "captures"
         os.makedirs("captures", exist_ok=True)
@@ -84,28 +87,75 @@ class CaptureService(QObject):
         result['media_name'] = captured_app_name or 'Unknown'
     
         self.ocr_finished.emit(result)
+        
+        detected_media_id = self.main_window.media_service.get_or_create_media_id(result['media_name'])
+        
+        if self.settings_service.user_settings.get('auto_save', False):
+            show_media_dialog = self.settings_service.user_settings.get('show_media_dialog', True)
+            # Só mostra o diálogo se a opção estiver ativada
+            if show_media_dialog:
+                # Condições para mostrar o diálogo:
+                # 1. É a primeira captura (memória está vazia).
+                # 2. A mídia detectada é DIFERENTE da última confirmada.
+                if self.last_confirmed_media_id is None or self.last_confirmed_media_id != detected_media_id:
+                    self.media_confirmation_required.emit(result, result['media_name'])
+                else:
+                    # O app é o mesmo, não precisa de diálogo. Salva direto.
+                    print(f"Auto-save: Mídia '{result['media_name']}' já confirmada. Salvando diretamente.")
+                    self.start_save_flow(result, self.last_confirmed_media_id)
+            else:
+                # Não mostra o diálogo, salva direto
+                print("Auto-save: Configuração para não mostrar diálogo de mídia. Salvando diretamente.")
+                self.start_save_flow(result, detected_media_id)
+        else:
+            # auto_save está desativado: não iniciar o fluxo de salvamento automaticamente
+            print("Auto-save: desativado. Aguardando ação manual do usuário para salvar.")
             
     def _handle_error(self, msg):
         # Propaga o erro para a UI através de um sinal
         self.error_occurred.emit(msg)    
 
     
-    @pyqtSlot(dict, int) # Agora recebe o resultado E o media_id
-    def start_save_flow(self, result_data, media_id):
-
+    @pyqtSlot(dict, int)
+    def start_save_flow(self, result_data, media_id, is_manual=False):
         print(f"Serviço: Iniciando fluxo de salvamento com media_id: {media_id}")
+        # Proteção contra salvamentos duplicados para o mesmo resultado
+        if result_data is None:
+            return
+        if result_data.get('_saving_in_progress'):
+            print('Serviço: Salvamento já em progresso para este resultado. Ignorando nova solicitação.')
+            return
+        if result_data.get('_saved'):
+            print('Serviço: Resultado já salvo anteriormente. Ignorando solicitação.')
+            return
+
         result_data['media_id'] = media_id
-        
+        result_data['_saving_in_progress'] = True
+        self.last_confirmed_media_id = media_id
+
         auto_save = self.settings_service.user_settings.get('auto_save', False)
         save_image = self.settings_service.user_settings.get('save_image', False)
-        
-        if auto_save:
-            print("Serviço: Iniciando fluxo de salvamento automático.")
-            self._run_full_save_in_thread(result_data)
-        elif save_image:
-            self.save_image_to_disk(result_data['pixmap'])
-        elif not auto_save and not save_image:
-            self._run_full_save_in_thread(result_data)
+
+        # Se não for auto_save, mas for para salvar imagem, salve a imagem e armazene o caminho
+        if not auto_save and save_image and not is_manual:
+            print("Servico: Iniciando fluxo de salvamento de imagem (prévio ao manual).")
+            image_path = self.save_image_to_disk(result_data['pixmap'])
+            result_data['image_path'] = image_path
+            # Não salva no banco ainda, só salva a imagem
+            return
+
+        if is_manual:
+            print("Serviço: Iniciando fluxo de salvamento manual.")
+            # Se já existe image_path, não salve a imagem de novo
+            if 'image_path' in result_data and result_data['image_path']:
+                print("Imagem já salva anteriormente, salvando apenas metadados.")
+                self._run_save_capture_data_in_thread(result_data, result_data['image_path'])
+            else:
+                self._run_full_save_in_thread(result_data)
+        else:
+            if auto_save:
+                print("Serviço: Iniciando fluxo de salvamento automático.")
+                self._run_full_save_in_thread(result_data)
         
     def _run_save_capture_in_disk_in_thread(self,result):
         worker = DbWorker(self, 'save_image_to_disk', result['pixmap'])
@@ -149,7 +199,18 @@ class CaptureService(QObject):
             self.main_window.tray_icon.showMessage(
                 'Capture', f'Capture {id} saved successfully!'
             )
-            self.main_window.custom_tab.collection_panel.add_capture_to_grid(id)
+            # Marca como salvo para evitar re-saves da mesma captura
+            try:
+                result['_saved'] = True
+                result.pop('_saving_in_progress', None)
+            except Exception:
+                pass
+
+            # Emite sinal para que a UI atualize (MainWindow irá adicionar à grid)
+            try:
+                self.capture_saved.emit(id)
+            except Exception:
+                pass
         
         thread = run_in_thread(
             worker=capture_worker,
@@ -181,7 +242,13 @@ class CaptureService(QObject):
     
     def get_captures(self):
         print('Collection call!')
-        return self.capture_repo.select_captures()
+        return self.capture_repo.select_captures_ordered('DESC')
+
+    def get_captures_ordered(self, order='DESC'):
+        return self.capture_repo.select_captures_ordered(order)
+
+    def get_captures_by_kanji(self, kanji, order='DESC'):
+        return self.capture_repo.get_captures_by_kanji(kanji, order)
     
     def remove_capture(self, capture):
         self.capture_repo.delete_capture(capture['id'])
@@ -193,3 +260,7 @@ class CaptureService(QObject):
     def find_by_id_capture(self, id):
         return self.capture_repo.select_capture_by_id(id)
 
+    def update_capture_media(self, capture_id, media_id):
+        """ Ponto de entrada do serviço para atualizar a mídia de uma captura. """
+        self.capture_repo.update_media_id(capture_id, media_id)
+        print(f"Mídia da captura {capture_id} atualizada para {media_id}")

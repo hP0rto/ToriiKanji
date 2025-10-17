@@ -21,9 +21,23 @@ class CaptureRepository:
             conn.commit()
             
     def select_captures(self):
+        return self.select_captures_ordered('DESC')
+
+    def select_captures_ordered(self, order='DESC'):
         with get_connection() as conn:
             cur = conn.cursor()
-            cur.execute('SELECT * FROM capture')
+            cur.execute(f'SELECT * FROM capture ORDER BY timestamp {order}')
+            return [dict(row) for row in cur.fetchall()]
+
+    def get_captures_by_kanji(self, kanji_char, order='DESC'):
+        with get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(f"""
+                SELECT c.* FROM capture c
+                JOIN capture_kanji ck ON ck.capture_id = c.id
+                WHERE ck.kanji = ?
+                ORDER BY c.timestamp {order}
+            """, (kanji_char,))
             return [dict(row) for row in cur.fetchall()]
             
     def select_capture_by_id(self, id):
@@ -37,3 +51,9 @@ class CaptureRepository:
             cur = conn.cursor()
             cur.execute('DELETE FROM capture WHERE id = ?', (id,))
             return cur.fetchone()
+        
+    def update_media_id(self, capture_id, media_id):
+        with get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute('UPDATE capture SET media_id = ? WHERE id = ?', (media_id, capture_id))
+            conn.commit()

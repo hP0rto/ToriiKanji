@@ -3,7 +3,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 
 class KanjiCard(QFrame):
-    def __init__(self, kanji, kunyomi, onyomi, meaning, jlpt, parent=None):
+    def __init__(self, kanji, kunyomi, onyomi, meaning, jlpt, strokes=None, parent=None):
         super().__init__(parent)
 
         self.setObjectName("kanjiCard")
@@ -47,7 +47,7 @@ class KanjiCard(QFrame):
 
         # Infos ao lado
         info_layout = QVBoxLayout()
-        
+
         kunyomi_label = QLabel("Kunyomi")
         kunyomi_label.setProperty("role", "title")
         kunyomi_value = QLabel(kunyomi)
@@ -59,10 +59,15 @@ class KanjiCard(QFrame):
         meaning_label = QLabel("Meaning")
         meaning_label.setProperty("role", "title")
         meaning_value = QLabel(meaning)
-        
+
+        # Strokes (optional)
+        strokes_label = QLabel("Strokes")
+        strokes_label.setProperty("role", "title")
+        strokes_value = QLabel(str(strokes) if strokes is not None else "—")
+
         jlpt_label = QLabel("JLPT Level")
         jlpt_label.setProperty("role", "title")
-        jlpt_value = QLabel(f'N{jlpt}')
+        jlpt_value = QLabel(f'N{jlpt}' if jlpt is not None else "—")
         jlpt_value.setStyleSheet('''
                 QLabel {
                     background-color: #C24338;
@@ -78,9 +83,10 @@ class KanjiCard(QFrame):
         info_layout.addWidget(onyomi_value)
         info_layout.addWidget(meaning_label)
         info_layout.addWidget(meaning_value)
+        info_layout.addWidget(strokes_label)
+        info_layout.addWidget(strokes_value)
         if jlpt:
             info_layout.addWidget(jlpt_label)
             info_layout.addWidget(jlpt_value)
-        
 
         layout.addLayout(info_layout)

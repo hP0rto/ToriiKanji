@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QGridLayout, QMessageBox
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QGridLayout, QMessageBox, QHBoxLayout, QLabel, QComboBox
 from PyQt6.QtCore import Qt
 
 
@@ -28,7 +28,19 @@ class CollectionPanel(QWidget):
         
         delete_button = create_text_button('Delete selected', self.delete_selected_captures)
         layout.addWidget(delete_button)
-        
+        self._current_filter = None
+        # Sort controls row
+        sort_row = QWidget()
+        sort_layout = QHBoxLayout(sort_row)
+        sort_layout.setContentsMargins(0,0,0,0)
+        sort_layout.addWidget(QLabel('Sort:'))
+        self.sort_combo = QComboBox()
+        self.sort_combo.addItems(['Most recent', 'Oldest'])
+        self.sort_combo.currentIndexChanged.connect(self.on_sort_changed)
+        sort_layout.addWidget(self.sort_combo)
+        sort_layout.addStretch()
+        layout.addWidget(sort_row)
+
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
         
@@ -95,14 +107,15 @@ class CollectionPanel(QWidget):
             if hasattr(self.grid.itemAt(i).widget(), "selected") and self.grid.itemAt(i).widget().selected
         ]
 
+        from utils.i18n import t
         if not selected_frames:
-            QMessageBox.information(self, "Delete", "Nenhuma captura selecionada.")
+            QMessageBox.information(self, t('delete_selected'), t('no_capture_selected'))
             return
 
         confirm = QMessageBox.question(
             self,
-            "Confirmar exclusão",
-            f"Excluir {len(selected_frames)} captura(s)?",
+            t('confirm_removal_title'),
+            f"Delete {len(selected_frames)} capture(s)?",
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
 
@@ -144,3 +157,31 @@ class CollectionPanel(QWidget):
         col = index % self.COL_NUMBER
         
         return (row, col)
+    
+    def on_sort_changed(self, idx):
+        # reload with new order
+        self.load_collection()
+
+    def on_kanji_selected(self, kanji_char):
+        if kanji_char:
+            self._current_filter = kanji_char
+        else:
+            self._current_filter = None
+        self.load_collection()
+
+    def load_collection(self):
+        order = 'DESC' if self.sort_combo.currentIndex() == 0 else 'ASC'
+        if self._current_filter:
+            worker = DbWorker(self.capture_service, 'get_captures_by_kanji', self._current_filter, order)
+        else:
+            worker = DbWorker(self.capture_service, 'get_captures_ordered', order)
+
+        thread = run_in_thread(worker, on_finished=self.fill_list, on_error=lambda msg: print('Error:', msg))
+        self.threads.append(thread)
+        self.workers.append(worker)
+        # refresh side panels
+        try:
+            self.analytics.refresh()
+            self.kanji_list.refresh()
+        except Exception:
+            pass
