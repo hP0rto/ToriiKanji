@@ -19,7 +19,8 @@ class OverlayPanel(QWidget):
         self.main_window = main_window # dependency injection 👍    
         self.result = None
         self.kanji_service = KanjiService()
-        self.media_service = MediaService()
+        # Use the application's shared MediaService from main_window so signals propagate
+        self.media_service = self.main_window.media_service
         
         
         media_layout = QHBoxLayout()
@@ -128,7 +129,7 @@ class OverlayPanel(QWidget):
         self.result = result
         image_path = result.get('image_path') 
         original_pixmap = result.get('pixmap')
-        media_name = result.get('media_name', 'Unknown')
+        media_name = result.get('media_name')
         is_existing_capture = 'id' in result and result.get('id') is not None
         
         if is_existing_capture:
@@ -138,7 +139,8 @@ class OverlayPanel(QWidget):
             
             # Pega o nome da mídia do banco de dados
             media = self.media_service.get_media_by_id(result.get('media_id'))
-            media_name = media['title'] if media else "N/A"
+            if media:
+                media_name = media['title']
             self._current_media_id = result.get('media_id')
         else:
             # Visualizando uma NOVA captura (pós-OCR)
@@ -154,7 +156,7 @@ class OverlayPanel(QWidget):
             
             self.change_media_button.show()
             
-            media_name = result.get('media_name', 'Unknown')
+            media_name = result.get('media_name')
             media_id = self.media_service.get_or_create_media_id(media_name)
             self._current_media_id = media_id
         
@@ -162,9 +164,7 @@ class OverlayPanel(QWidget):
         if image_path:
             original_pixmap = pixmap_null_handler(QPixmap(image_path))
         
-        self.media_label.setText(media_name.title())
-        media_id = self.media_service.get_or_create_media_id(media_name)
-        self._current_media_id = media_id
+        self.media_label.setText(media_name.title() if media_name else 'N/A')
 
         scaled_pixmap = original_pixmap.scaled(
             self.capture_label.size(),

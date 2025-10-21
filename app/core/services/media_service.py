@@ -1,7 +1,13 @@
 from db.repositories.media_repository import MediaRepository
+from PyQt6.QtCore import QObject, pyqtSignal
 
-class MediaService:
+
+class MediaService(QObject):
+    """Service managing medias. Emits `media_changed` when medias are added/removed so UI can refresh."""
+    media_changed = pyqtSignal()
+
     def __init__(self):
+        super().__init__()
         self.media_repo = MediaRepository()
 
     def get_all_media(self):
@@ -9,20 +15,29 @@ class MediaService:
 
     def get_or_create_media_id(self, title: str) -> int:
         """
-        Recebe um título. Se já existir, retorna o ID.
-        Se não, cria um novo e retorna o novo ID.
+        Receive a title. If exists, return id, otherwise insert and return new id.
+        Emits media_changed when a new media is created.
         """
-        # Normaliza o input para evitar duplicatas (ex: "chrome" vs "Chrome")
         normalized_title = title.strip().title()
 
         media = self.media_repo.get_by_title(normalized_title)
         if media:
             return media['id']
         else:
-            return self.media_repo.insert(normalized_title)
-            
+            new_id = self.media_repo.insert(normalized_title)
+            try:
+                self.media_changed.emit()
+            except Exception:
+                pass
+            return new_id
+
     def delete_media(self, media_id):
-        return self.media_repo.delete(media_id)
+        result = self.media_repo.delete(media_id)
+        try:
+            self.media_changed.emit()
+        except Exception:
+            pass
+        return result
     
     def get_media_by_id(self, media_id):
         return self.media_repo.get_by_id(media_id)

@@ -249,6 +249,9 @@ class CaptureService(QObject):
 
     def get_captures_by_kanji(self, kanji, order='DESC'):
         return self.capture_repo.get_captures_by_kanji(kanji, order)
+
+    def get_captures_by_media(self, media_id, order='DESC'):
+        return self.capture_repo.select_captures_by_media(media_id, order)
     
     def remove_capture(self, capture):
         self.capture_repo.delete_capture(capture['id'])

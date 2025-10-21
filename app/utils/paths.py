@@ -1,5 +1,6 @@
 from pathlib import Path
 import platform
+import shutil
 import os, sys
 '''
     Arquivo para centralizar acesso de caminhos no codigo
@@ -14,7 +15,20 @@ def resource_path(relative_path):
     return base_path / relative_path
 
 
-DB_PATH = resource_path('database/toriikanji.db')
+APP_NAME = 'ToriiKanji'
+
+if platform.system() == 'Windows':
+    base_dir = os.path.join(os.getenv('APPDATA'), APP_NAME)
+elif platform.system() == 'Linux':
+    base_dir = os.path.join(os.path.expanduser('~/.config'), APP_NAME)
+else:
+    base_dir = os.path.join(os.path.expanduser('~'), '.' + APP_NAME.lower())
+
+os.makedirs(base_dir, exist_ok=True)
+
+# Persistent database path in user AppData/config
+DB_PATH = os.path.join(base_dir, 'toriikanji.db')
+
 ASSETS = resource_path('assets')
 TESSERACT_PATH = resource_path('tesseract/tesseract.exe')
 
@@ -25,14 +39,9 @@ BACKGROUND_IMG = ASSETS / 'background.png'
 ICON = ASSETS / 'icon' / 'icon.ico'
 NO_IMG = ASSETS / 'no_image.png'
 
-APP_NAME = 'ToriiKanji'
 
-if platform.system() == 'Windows':
-    base_dir = os.path.join(os.getenv('APPDATA'), APP_NAME)
-elif platform.system() == 'Linux':
-    base_dir = os.path.join(os.path.expanduser('~/.config'), APP_NAME)
-
-# Cria o diretório caso não exista
-os.makedirs(base_dir, exist_ok=True)
 
 JSON_PATH = os.path.join(base_dir, 'usersettings.json')
+
+
+

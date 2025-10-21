@@ -26,7 +26,6 @@ class KanjiCard(QFrame):
                 font-weight: bold;
             }
         """)
-
         layout = QHBoxLayout(self)
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         # Quadrado do kanji
@@ -83,8 +82,9 @@ class KanjiCard(QFrame):
         info_layout.addWidget(onyomi_value)
         info_layout.addWidget(meaning_label)
         info_layout.addWidget(meaning_value)
-        info_layout.addWidget(strokes_label)
-        info_layout.addWidget(strokes_value)
+        if strokes:
+            info_layout.addWidget(strokes_label)
+            info_layout.addWidget(strokes_value)
         if jlpt:
             info_layout.addWidget(jlpt_label)
             info_layout.addWidget(jlpt_value)

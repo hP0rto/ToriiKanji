@@ -11,6 +11,10 @@ class KanjiService():
     def get_all_kanji_capture(self, capture_id):
         return self.kanji_repo.find_all_kanjis_capture(capture_id)
 
-    
+    def get_all_user_kanji_with_count(self, order):
+        return self.kanji_repo.list_kanjis_with_counts(order_dir=order)
+
+    def get_all_user_kanji_with_count_by_media(self, media_id, order):
+        return self.kanji_repo.list_kanjis_with_counts_by_media(media_id, order_dir=order)
     
 

@@ -29,6 +29,20 @@ class CaptureRepository:
             cur.execute(f'SELECT * FROM capture ORDER BY timestamp {order}')
             return [dict(row) for row in cur.fetchall()]
 
+    def select_captures_by_media(self, media_id, order='DESC'):
+        with get_connection() as conn:
+            cur = conn.cursor()
+            # media_id None previously meant 'all' in UI; treat explicit sentinel -1 as 'no media'
+            if media_id is None:
+                cur.execute(f'SELECT * FROM capture ORDER BY timestamp {order}')
+            elif media_id == -1:
+                # captures without media
+                cur.execute(f'SELECT * FROM capture WHERE media_id IS NULL ORDER BY timestamp {order}')
+            else:
+                cur.execute(f'SELECT * FROM capture WHERE media_id = ? ORDER BY timestamp {order}', (media_id,))
+
+            return [dict(row) for row in cur.fetchall()]
+
     def get_captures_by_kanji(self, kanji_char, order='DESC'):
         with get_connection() as conn:
             cur = conn.cursor()
@@ -49,8 +63,10 @@ class CaptureRepository:
     def delete_capture(self,id):
         with get_connection() as conn:
             cur = conn.cursor()
+            cur.execute('DELETE FROM capture_kanji WHERE capture_id = ?', (id,))
             cur.execute('DELETE FROM capture WHERE id = ?', (id,))
-            return cur.fetchone()
+            conn.commit()
+            return cur.rowcount > 0
         
     def update_media_id(self, capture_id, media_id):
         with get_connection() as conn:

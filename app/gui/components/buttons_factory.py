@@ -24,20 +24,24 @@ def create_icon_button(icon_path: Path, tooltip: str = "", on_click=None, size=4
     return button
 
 
-def create_text_button(text: str, on_click=None) -> QPushButton:
+def create_text_button(text: str, on_click=None, style_sheet=None) -> QPushButton:
     button = QPushButton(text)
-    button.setStyleSheet("""
-        QPushButton {
-            background-color: #2c2c2c;
-            color: white;
-            border: 1px solid #555;
-            padding: 8px 16px;
-            border-radius: 8px;
-        }
-        QPushButton:hover {
-            background-color: #3c3c3c;
-        }
-    """)
+    if style_sheet is None:
+        button.setStyleSheet("""
+            QPushButton {
+                background-color: #2c2c2c;
+                color: white;
+                border: 1px solid #555;
+                padding: 8px 16px;
+                border-radius: 8px;
+            }
+            QPushButton:hover {
+                background-color: #3c3c3c;
+            }
+        """)
+    else:
+        button.setStyleSheet(style_sheet)    
+    
     if on_click:
         button.clicked.connect(on_click)
     return button

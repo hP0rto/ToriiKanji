@@ -6,16 +6,18 @@ from gui.CollectionPanel import CollectionPanel
 from gui.SettingsPanel import SettingsPanel
 from gui.OverlayPanel import OverlayPanel
 class CustomTabWidget(QWidget):
-    def __init__(self, main_window, capture_service, media_service):
+    def __init__(self, main_window, capture_service, media_service, kanji_service):
         super().__init__()
         self.main_window = main_window
         self.capture_service = capture_service
         self.media_service = media_service
+        self.kanji_service = kanji_service
+        
         layout = QVBoxLayout(self)
 
         self.overlay_panel = OverlayPanel(self.main_window)
         self.settings_panel = SettingsPanel(self.main_window)
-        self.collection_panel = CollectionPanel(self.main_window, self.capture_service, self.media_service)
+        self.collection_panel = CollectionPanel(self.main_window, self.capture_service, self.media_service, self.kanji_service)
     
         self.settings_panel.settings_saved.connect(self.overlay_panel.update_ui_from_settings)
         
@@ -28,7 +30,7 @@ class CustomTabWidget(QWidget):
         self.stack = QStackedWidget()
         layout.addWidget(self.stack)
 
-        self.add_tab("Insights", self.overlay_panel) 
+        self.add_tab("Capture", self.overlay_panel) 
         self.add_tab("Collections", self.collection_panel)
         self.add_tab("Settings", self.settings_panel)
 
