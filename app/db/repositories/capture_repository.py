@@ -1,6 +1,24 @@
 from db.database import get_connection
 
 class CaptureRepository:
+    def list_captures_with_dates(self, order='ASC'):
+        """Returns a list of captures with their timestamp/date field."""
+        with get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute(f'SELECT id, raw_text, image_path, media_id, timestamp as date FROM capture ORDER BY timestamp {order}')
+            return [dict(row) for row in cur.fetchall()]
+    def count_by_media(self):
+        """Returns a list of dicts: [{'media': media_name_or_None, 'count': count}, ...]"""
+        with get_connection() as conn:
+            cur = conn.cursor()
+            cur.execute('''
+                SELECT m.title as media, COUNT(c.id) as count
+                FROM capture c
+                LEFT JOIN media m ON c.media_id = m.id
+                GROUP BY m.title
+                ORDER BY count DESC
+            ''')
+            return [dict(row) for row in cur.fetchall()]
 
     def insert_capture(self, raw_text, image_path, media_id=None):
         with get_connection() as conn:

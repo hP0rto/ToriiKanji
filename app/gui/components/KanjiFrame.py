@@ -1,10 +1,7 @@
 from PyQt6.QtWidgets import QFrame, QLabel, QVBoxLayout
-from PyQt6.QtCore import   QVariantAnimation, Qt, pyqtSignal
-from PyQt6.QtGui import QColor, QPalette, QPixmap
+from PyQt6.QtCore import   QVariantAnimation, Qt, pyqtSignal, QTimer
+from PyQt6.QtGui import QColor, QPalette
 
-from utils.helpers import pixmap_null_handler
-
-from datetime import datetime
 
 class KanjiFrame(QFrame):
     clicked = pyqtSignal(object)
@@ -97,8 +94,7 @@ class KanjiFrame(QFrame):
         self.color_anim.setEndValue(self.hover_color)
         self.color_anim.start()
 
-        # Start a timer to show the balloon after 2 seconds
-        from PyQt6.QtCore import QTimer
+        
         if self._balloon_timer is not None:
             self._balloon_timer.stop()
             self._balloon_timer.deleteLater()

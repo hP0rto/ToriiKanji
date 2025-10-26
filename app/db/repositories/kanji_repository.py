@@ -24,11 +24,15 @@ class KanjiRepository:
     def list_kanjis_with_counts(self, limit=200, order_dir='DESC'):
         # order_dir: 'ASC' | 'DESC' (orders by latest capture timestamp)
         order_dir = (order_dir or 'DESC').upper()
-        if order_dir not in ('ASC', 'DESC'):
+        
+        if order_dir not in ('ASC', 'DESC', 'COUNT'):
             order_dir = 'DESC'
-
-        order_clause = f"last_capture {order_dir}"
-
+            
+        if not 'COUNT':
+            order_clause = f"last_capture {order_dir}"
+        else: 
+            order_clause = 'cnt DESC'
+            
         with get_connection() as conn:
             cur = conn.cursor()
 

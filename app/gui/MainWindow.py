@@ -4,6 +4,7 @@ from PyQt6.QtGui import QIcon, QAction, QPixmap, QPainter, QColor
 
 from utils.paths import BACKGROUND_IMG, ICON
 
+from core.services.analitycs_service import AnalitycsService
 from core.services.media_service import MediaService
 from core.services.kanji_service import KanjiService
 from core.services.setting_services import SettingsService
@@ -26,6 +27,7 @@ class MainWindow(QWidget):
         self.setting_service = SettingsService()
         self.kanji_service = KanjiService()
         self.media_service = MediaService()
+        self.analitycs_service = AnalitycsService()
 
         self.capture_service.main_window = self
         
@@ -39,7 +41,7 @@ class MainWindow(QWidget):
         self.capture_service.media_confirmation_required.connect(self.initiate_media_confirmation)
         
         
-        self.custom_tab = CustomTabWidget(self, self.capture_service, self.media_service, self.kanji_service)
+        self.custom_tab = CustomTabWidget(self, self.capture_service, self.media_service, self.kanji_service, self.analitycs_service)
         self.custom_tab.overlay_panel.save_requested.connect(self.on_manual_save_requested)
         # conecta sinal de capture_saved ao overlay para atualizar o botão quando o serviço terminar de salvar
         try:

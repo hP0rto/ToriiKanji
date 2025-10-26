@@ -36,6 +36,9 @@ TESSERACT_PATH = resource_path('tesseract/tesseract.exe')
 EXIT_ICON = ASSETS / 'exit_button.svg'
 SETTINGS_ICON = ASSETS / 'setting_button.svg'
 BACKGROUND_IMG = ASSETS / 'background.png'
+BOOK_OPEN_ICON = ASSETS / 'book-open.svg'
+TRENDING_UP_ICON = ASSETS / 'trending-up.svg'
+TARGET_ICON = ASSETS / 'target.svg'
 ICON = ASSETS / 'icon' / 'icon.ico'
 NO_IMG = ASSETS / 'no_image.png'
 
