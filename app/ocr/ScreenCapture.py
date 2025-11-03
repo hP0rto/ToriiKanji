@@ -28,6 +28,7 @@ class ScreenCapture:
         self.start_x = None
         self.start_y = None
         self.rect = None
+        self.cancelled = False
 
         # Vincula eventos do mouse
         self.canvas.bind("<ButtonPress-1>", self.on_press)
@@ -35,7 +36,7 @@ class ScreenCapture:
         self.canvas.bind("<ButtonRelease-1>", self.on_release)
 
         # controla nome e localização dos arquivos
-        os.makedirs("images", exist_ok=True)
+   
         self.file_name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         self.screenshot = None
 
@@ -77,4 +78,5 @@ class ScreenCapture:
         #self.screenshot.save(f"images/{self.file_name}.png")
 
     def cancel_capture(self, event):
+        self.cancelled = True
         self.root.destroy()

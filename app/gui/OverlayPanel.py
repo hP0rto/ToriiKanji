@@ -56,12 +56,15 @@ class OverlayPanel(QWidget):
         self.capture_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.capture_label.resize(400,400)
 
-        self.text_label = QLabel("")
-        self.text_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.text_label.setStyleSheet('font-size: 20px')
-        
+        self.text_box = QTextEdit("")
+        self.text_box.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.text_box.setReadOnly(True)
+        self.text_box.setStyleSheet('font-size: 24px;')
+        self.text_box.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.text_box.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+            
         top_layout.addWidget(self.capture_label)
-        top_layout.addWidget(self.text_label)
+        top_layout.addWidget(self.text_box)
 
         bottom_container = QWidget()
         bottom_layout = QVBoxLayout(bottom_container)
@@ -96,6 +99,25 @@ class OverlayPanel(QWidget):
         
         self.update_ui_from_settings()
         self.show()
+    
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        # Fonte: 6% da altura, mínimo 24, máximo 48
+        font_size = max(24, min(48, int(self.height() * 0.06)))
+        self.text_box.setStyleSheet(f'''
+            QTextEdit {{
+                font-size: {font_size}px;
+                border-radius: 15px;
+                background-color: #2c2c2c;
+                color: #fff;
+                border: 1px solid #555;
+                padding: 8px;
+                text-align: center;
+            }}
+        ''')
+        self.text_box.setFixedWidth(self.width() - 40)
+        self.text_box.setMinimumHeight(60)  # Minimum height for single-line or short text
+        self.text_box.setMaximumHeight(int(self.height() * 0.28))  # Max 28% of panel height
     
     @pyqtSlot()
     def update_ui_from_settings(self):
@@ -177,9 +199,9 @@ class OverlayPanel(QWidget):
         kanjis = result.get('kanjis', self.kanji_service.get_all_kanji_capture(result.get('id')))
         
         normalized_text = result.get('raw_text').replace("\n", "")
-
-        self.text_label.setFixedWidth(self.width())
-        self.text_label.setText(normalized_text)
+        # Center text using HTML
+        self.text_box.setHtml(f'<div style="text-align:center;">{normalized_text}</div>')
+        self.text_box.setFixedWidth(self.width() - 40)
         
         self.show_result(kanjis)
         

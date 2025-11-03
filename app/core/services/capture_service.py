@@ -56,6 +56,8 @@ class CaptureService(QObject):
         app = ScreenCapture(root)
         root.mainloop()
     
+        if app.cancelled:
+            return None
         
         return {
             'captured_app_name': app.captured_app_name,
@@ -267,3 +269,8 @@ class CaptureService(QObject):
         """ Ponto de entrada do serviço para atualizar a mídia de uma captura. """
         self.capture_repo.update_media_id(capture_id, media_id)
         print(f"Mídia da captura {capture_id} atualizada para {media_id}")
+        
+    def remove_captures_by_kanji(self, kanji):
+        captures = self.get_captures_by_kanji(kanji)
+        for capture in captures:
+            self.remove_capture(capture)

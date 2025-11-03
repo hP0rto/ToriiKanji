@@ -3,6 +3,7 @@ database/
 captures/
 /Output/
 /build_assets/
+build.ps1
 
 
 # Byte-compiled / optimized / DLL files

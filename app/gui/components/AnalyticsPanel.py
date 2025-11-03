@@ -2,7 +2,7 @@ import os
 import numpy as np
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QFrame,
-    QListWidget, QListWidgetItem
+    QListWidget, QListWidgetItem, QApplication
 )
 from PyQt6.QtGui import (
     QPixmap, QIcon, QFont, QColor, QPainter, QBrush, QPen, QPainterPath, QRegion
@@ -225,9 +225,30 @@ class AnalyticsPanel(QWidget):
         
         self.setStyleSheet(f"background-color: {BG_COLOR_DARK.name()};")
 
+        # Detect screen size for responsive sizing
+        screen = QApplication.primaryScreen()
+        screen_geometry = screen.geometry()
+        screen_width = screen_geometry.width()
+        
+        # Responsive dimensions based on screen width
+        if screen_width < 2000:
+            # Smaller screens: compact layout
+            self.card_min_height = 160
+            self.chart_min_height = 140  # Increased to prevent Y-axis label truncation
+            main_spacing = 10
+            main_margins = (10, 10, 10, 10)
+            self.kanji_list_max_height = 150
+        else:
+            # Larger screens: normal layout
+            self.card_min_height = 220
+            self.chart_min_height = 180
+            main_spacing = 15
+            main_margins = (15, 15, 15, 15)
+            self.kanji_list_max_height = 200
+
         main_layout = QVBoxLayout(self)
-        main_layout.setSpacing(15)
-        main_layout.setContentsMargins(15, 15, 15, 15)
+        main_layout.setSpacing(main_spacing)
+        main_layout.setContentsMargins(*main_margins)
 
         # --- Summary Cards ---
         summary_grid = QGridLayout()
@@ -235,7 +256,7 @@ class AnalyticsPanel(QWidget):
         
         self.card_unique = SummaryCard(BOOK_OPEN_ICON, "Unique", "—", "kanji")
         self.card_total = SummaryCard(TRENDING_UP_ICON, "Total", "—", "occurrences")
-        self.card_avg = SummaryCard(TARGET_ICON, "Avg", "—", "Grade")
+        self.card_avg = SummaryCard(TARGET_ICON, "Avg", "—", "Jltp")
         
         summary_grid.addWidget(self.card_unique, 0, 0)
         summary_grid.addWidget(self.card_total, 0, 1)
@@ -281,7 +302,7 @@ class AnalyticsPanel(QWidget):
         """)
         self.top_kanji_list_widget.setVerticalScrollMode(QListWidget.ScrollMode.ScrollPerPixel)
         self.top_kanji_list_widget.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.top_kanji_list_widget.setMaximumHeight(200) # Limit height further
+        self.top_kanji_list_widget.setMaximumHeight(self.kanji_list_max_height) # Limit height further
         kanji_list_card.layout().addWidget(self.top_kanji_list_widget)
         main_layout.addWidget(kanji_list_card)
         
@@ -308,7 +329,7 @@ class AnalyticsPanel(QWidget):
 
     def _create_chart_card(self, title, chart_view_widget):
         card = BaseCard()
-        card.setMinimumHeight(220)  # Ensures card and chart have enough height for axis labels
+        card.setMinimumHeight(self.card_min_height)  # Ensures card and chart have enough height for axis labels
         layout = QVBoxLayout(card)
         layout.setSpacing(8)
         layout.setContentsMargins(12, 8, 12, 12)
@@ -321,7 +342,7 @@ class AnalyticsPanel(QWidget):
         layout.addWidget(title_label)
         if chart_view_widget:
             chart_view_widget.setRenderHint(QPainter.RenderHint.Antialiasing)
-            chart_view_widget.setMinimumHeight(180)  # Slightly larger for chart area
+            chart_view_widget.setMinimumHeight(self.chart_min_height)  # Slightly larger for chart area
             layout.addWidget(chart_view_widget)
         return card
 
@@ -355,7 +376,7 @@ class AnalyticsPanel(QWidget):
 
         self.card_unique.set_value(total_kanjis)
         self.card_total.set_value(total_occurrences)
-        self.card_avg.set_value(f"{avg_grade:.0f}")
+        self.card_avg.set_value(f"{avg_JLPT:.0f}")
 
         # --- JLPT Chart ---
         jlpt_counts = {}

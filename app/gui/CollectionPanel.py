@@ -12,7 +12,7 @@ from core.services.media_service import MediaService
 from core.workers.db_worker import DbWorker
 
 class CollectionPanel(QWidget):
-    COL_NUMBER = 3
+    COL_NUMBER_DEFAULT = 3
     
     def __init__(self, main_window, capture_service, media_service, kanji_service):
         super().__init__()
@@ -63,24 +63,67 @@ class CollectionPanel(QWidget):
             self.media_combo.addItem(m['title'], m['id'])   
         self.media_combo.currentIndexChanged.connect(self.on_media_changed)
         sort_layout.addWidget(self.media_combo)
+        screen_width = self.main_window.width() / 0.3
+        if screen_width < 2000:
+            # Smaller screens: compact controls
+            label_font_size = "font-size: 11px;"
+            combo_min_width = 80
+            button_min_width = 60
+        else:
+            # Larger screens: normal controls
+            label_font_size = ""
+            combo_min_width = 100
+            button_min_width = 80
 
-        style_sheet = """
-            QPushButton {
-                background-color: #2c2c2c;
-                color: white;
-                border: 1px solid #555;
-                padding: 3px 16px;
-                border-radius: 8px;
-            }
-            QPushButton:hover {
-                background-color: #3c3c3c;
-            }
-        """
+        # Apply responsive styling to labels and combos
+        for i in range(sort_layout.count()):
+            item = sort_layout.itemAt(i)
+            widget = item.widget()
+            if isinstance(widget, QLabel):
+                widget.setStyleSheet(f"QLabel {{ {label_font_size} }}")
+            elif isinstance(widget, QComboBox):
+                widget.setMinimumWidth(combo_min_width)
+                widget.setStyleSheet(f"QComboBox {{ {label_font_size} }}")
+
+        # Responsive button styling based on screen width
+        if screen_width < 2000:
+            # Smaller screens: compact buttons
+            style_sheet = f"""
+                QPushButton {{
+                    background-color: #2c2c2c;
+                    color: white;
+                    border: 1px solid #555;
+                    padding: 2px 8px;
+                    border-radius: 6px;
+                    {label_font_size}
+                    min-width: {button_min_width}px;
+                }}
+                QPushButton:hover {{
+                    background-color: #3c3c3c;
+                }}
+                QComboBox {{
+                    padding: 2px;
+                    {label_font_size}
+                }}
+            """
+        else:
+            # Larger screens: normal buttons
+            style_sheet = f"""
+                QPushButton {{
+                    background-color: #2c2c2c;
+                    color: white;
+                    border: 1px solid #555;
+                    padding: 3px 16px;
+                    border-radius: 8px;
+                    min-width: {button_min_width}px;
+                }}
+                QPushButton:hover {{
+                    background-color: #3c3c3c;
+                }}
+            """
         
         refresh_button = create_text_button('Refresh', self.load_captures, style_sheet)
         refresh_button.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-        
-
         # Listen for media changes to refresh combo
         try:
             if hasattr(self.media_service, 'media_changed'):
@@ -102,15 +145,28 @@ class CollectionPanel(QWidget):
         container = QWidget()
         
         self.grid = QGridLayout(container)
-        self.grid.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignVCenter)
-
+        self.grid.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter)
+        # Responsive: set column stretch so grid is always centered
+        for col in range(self.COL_NUMBER_DEFAULT):
+            self.grid.setColumnStretch(col, 1)
         
         scroll_area.setWidget(container)
         
         layout.addWidget(scroll_area)
         
         self.setLayout(layout)
+        
+        self._current_col_number = self.COL_NUMBER_DEFAULT
+        
         self.show()
+        
+    def get_col_number(self):
+        # Responsive column count based on screen width (main window is 30% of screen)
+        screen_width = self.main_window.width() / 0.3
+        if screen_width < 2000:  # Smaller screens: 2 columns
+            return 2
+        else:  # Larger screens: 3 columns
+            return 3
         
     def showEvent(self, event):
         '''
@@ -186,32 +242,56 @@ class CollectionPanel(QWidget):
                 pass
     
     def delete_selected_captures(self):
-        selected_frames = [
-            self.grid.itemAt(i).widget()
-            for i in range(self.grid.count())
-            if hasattr(self.grid.itemAt(i).widget(), "selected") and self.grid.itemAt(i).widget().selected
-        ]
+        type = self.type_combo.currentIndex()
+        
+        if type == 0:
+            selected_frames = [
+                self.grid.itemAt(i).widget()
+                for i in range(self.grid.count())
+                if hasattr(self.grid.itemAt(i).widget(), "selected") and self.grid.itemAt(i).widget().selected
+            ]
 
-        from utils.i18n import t
-        if not selected_frames:
-            QMessageBox.information(self, t('delete_selected'), t('no_capture_selected'))
-            return
+            from utils.i18n import t
+            if not selected_frames:
+                QMessageBox.information(self, t('delete_selected'), t('no_capture_selected'))
+                return
 
-        confirm = QMessageBox.question(
-            self,
-            t('confirm_removal_title'),
-            f"Delete {len(selected_frames)} capture(s)?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-        )
+            confirm = QMessageBox.question(
+                self,
+                t('confirm_removal_title'),
+                f"Delete {len(selected_frames)} capture(s)?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            )
 
-        if confirm == QMessageBox.StandardButton.Yes:
-            for frame in selected_frames:
-                self.capture_service.remove_capture(frame.capture)
+            if confirm == QMessageBox.StandardButton.Yes:
+                for frame in selected_frames:
+                    self.capture_service.remove_capture(frame.capture)
 
-                self.grid.removeWidget(frame)
-                frame.deleteLater()
+                    self.grid.removeWidget(frame)
+                    frame.deleteLater()
 
-            self.reorganize_grid()
+                self.reorganize_grid()
+        elif type == 1:
+             selected_frames = [
+                self.grid.itemAt(i).widget()
+                for i in range(self.grid.count())
+                if hasattr(self.grid.itemAt(i).widget(), "selected") and self.grid.itemAt(i).widget().selected
+             ]
+             if not selected_frames:
+                 QMessageBox.information(self, "Delete", "No kanji selected")
+                 return
+            
+             confirm = QMessageBox.question(
+                self,
+                "Confirm",
+                f"Delete all captures for {len(selected_frames)} kanji(s)?",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+             )
+             if confirm == QMessageBox.StandardButton.Yes:
+                 for frame in selected_frames:
+                     kanji_char = frame.kanji.get('kanji')
+                     self.capture_service.remove_captures_by_kanji(kanji_char)
+                 self.load_captures()
     
     def reorganize_grid(self):
         # Guardar todos os widgets atuais numa lista
@@ -229,16 +309,38 @@ class CollectionPanel(QWidget):
             if widget:
                 self.grid.removeWidget(widget)
 
+        # Update column stretches for responsive design
+        col_count = self.get_col_number()
+        for col in range(col_count):
+            self.grid.setColumnStretch(col, 1)
+
         # Reposicionar cada widget no grid
         for index, widget in enumerate(widgets):
             row, col = self.get_row_and_col(index)
             self.grid.addWidget(widget, row, col)
         
     def get_row_and_col(self, index):
-        row = index // self.COL_NUMBER
-        col = index % self.COL_NUMBER
+        row = index // self.get_col_number()
+        col = index % self.get_col_number()
         
         return (row, col)
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        new_col_number = self.get_col_number()
+        if new_col_number != self._current_col_number:
+            self._current_col_number = new_col_number
+            self.reorganize_grid()
+        grid_width = self.width() * 0.92  # leave some margin
+        item_width = int(grid_width / self.get_col_number()) - 12  # 12px for spacing
+        item_height = int(item_width * 1.15)  # aspect ratio
+        for i in range(self.grid.count()):
+            item = self.grid.itemAt(i)
+            widget = item.widget()
+            if widget:
+                widget.setMinimumWidth(item_width)
+                widget.setMaximumWidth(item_width)
+                widget.setMinimumHeight(item_height)
+                widget.setMaximumHeight(item_height)
     
     def on_sort_changed(self, idx):
         # reload with new order

@@ -11,7 +11,6 @@ class KanjiFrame(QFrame):
         self.setFixedSize(150, 180)
         self.setAutoFillBackground(True)
         self.kanji = kanji
-        # cores
         self.normal_color = QColor("#3C3C3C")
         self.hover_color = QColor("#C24338")
         
@@ -21,7 +20,6 @@ class KanjiFrame(QFrame):
 
         self._balloon_timer = None  # QTimer for delayed balloon
 
-        # paleta inicial
         pal = self.palette()
         pal.setColor(QPalette.ColorRole.Window, self.normal_color)
         self.setPalette(pal)
@@ -31,7 +29,7 @@ class KanjiFrame(QFrame):
         layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
 
         kanji_box = QLabel(kanji['kanji'])
-        kanji_box.setFixedSize(60, 60)
+        kanji_box.setFixedSize(70, 70)
         kanji_box.setAlignment(Qt.AlignmentFlag.AlignCenter)
         kanji_box.setStyleSheet("""
             QLabel {
@@ -40,7 +38,7 @@ class KanjiFrame(QFrame):
                 font-size: 50px;
                 font-weight: bold;
                 border-radius: 6px;
-                margin-right: 10px;
+                padding: 5px
             }
         """)
         layout.addWidget(kanji_box)
@@ -51,8 +49,6 @@ class KanjiFrame(QFrame):
         
         self.setLayout(layout)
 
-
-        # animação de cor
         self.color_anim = QVariantAnimation()
         self.color_anim.setDuration(200)
         self.color_anim.valueChanged.connect(self.update_color)
@@ -95,14 +91,15 @@ class KanjiFrame(QFrame):
         self.color_anim.start()
 
         
-        if self._balloon_timer is not None:
-            self._balloon_timer.stop()
-            self._balloon_timer.deleteLater()
-        self._balloon_timer = QTimer(self)
-        self._balloon_timer.setSingleShot(True)
-        self._balloon_timer.timeout.connect(self._show_balloon)
-        self._balloon_timer.start(2000)
-
+        # if self._balloon_timer is not None:
+        #     self._balloon_timer.stop()
+        #     self._balloon_timer.deleteLater()
+        # self._balloon_timer = QTimer(self)
+        # self._balloon_timer.setSingleShot(True)
+        # self._balloon_timer.timeout.connect(self._show_balloon)
+        # self._balloon_timer.start(2000)
+        self._show_balloon()
+        
         super().enterEvent(event)
 
     def _show_balloon(self):
@@ -156,10 +153,10 @@ class KanjiFrame(QFrame):
         self.color_anim.start()
 
         # Cancel balloon timer if running
-        if self._balloon_timer is not None:
-            self._balloon_timer.stop()
-            self._balloon_timer.deleteLater()
-            self._balloon_timer = None
+        # if self._balloon_timer is not None:
+        #     self._balloon_timer.stop()
+        #     self._balloon_timer.deleteLater()
+        #     self._balloon_timer = None
 
         # Hide and delete balloon
         if self._balloon is not None:

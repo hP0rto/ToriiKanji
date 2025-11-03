@@ -8,6 +8,24 @@ from utils.paths import BACKGROUND_IMG
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     
+    # Force dark palette to ensure consistent colors regardless of Windows theme
+    from PyQt6.QtGui import QPalette, QColor
+    dark_palette = QPalette()
+    dark_palette.setColor(QPalette.ColorRole.Window, QColor(30, 30, 30))
+    dark_palette.setColor(QPalette.ColorRole.WindowText, QColor(255, 255, 255))
+    dark_palette.setColor(QPalette.ColorRole.Base, QColor(44, 44, 44))
+    dark_palette.setColor(QPalette.ColorRole.AlternateBase, QColor(30, 30, 30))
+    dark_palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(255, 255, 255))
+    dark_palette.setColor(QPalette.ColorRole.ToolTipText, QColor(255, 255, 255))
+    dark_palette.setColor(QPalette.ColorRole.Text, QColor(255, 255, 255))
+    dark_palette.setColor(QPalette.ColorRole.Button, QColor(44, 44, 44))
+    dark_palette.setColor(QPalette.ColorRole.ButtonText, QColor(255, 255, 255))
+    dark_palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 0, 0))
+    dark_palette.setColor(QPalette.ColorRole.Link, QColor(42, 130, 218))
+    dark_palette.setColor(QPalette.ColorRole.Highlight, QColor(42, 130, 218))
+    dark_palette.setColor(QPalette.ColorRole.HighlightedText, QColor(0, 0, 0))
+    app.setPalette(dark_palette)
+    
     splash_pix = QPixmap(str(BACKGROUND_IMG)).scaled(
         400,300,
         Qt.AspectRatioMode.KeepAspectRatio,

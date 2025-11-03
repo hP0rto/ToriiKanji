@@ -103,11 +103,8 @@ class SettingsPanel(QWidget):
             ("Show media dialog on auto-save", "show_media_dialog")
         ]
 
-        self.saving_grid = QGridLayout()
+        self.saving_grid = QVBoxLayout()
         self.saving_grid.setSpacing(12)
-        self.saving_grid.setColumnStretch(0, 3)
-        self.saving_grid.setColumnStretch(1, 1)
-
         self.enable_labels = {}
 
         for row, (label_text, key) in enumerate(options):
@@ -116,14 +113,21 @@ class SettingsPanel(QWidget):
             label.setStyleSheet("color: white; font-size: 14px;")
             enable_label = QLabel('Enable' if state else 'Disable')
             enable_label.setStyleSheet("color: white; font-size: 14px; padding-right: 10px;font-weight: bold;")
+            enable_label.setMinimumWidth(70)
             switch = Switch()
             switch.setChecked(state)
             switch.clicked.connect(lambda check, enable_lab=enable_label, key=key: self.on_switch_changed(check,enable_lab,key))
             self.inputs[key] = switch
             self.enable_labels[key] = enable_label
-            self.saving_grid.addWidget(label, row, 0, alignment=Qt.AlignmentFlag.AlignLeft)
-            self.saving_grid.addWidget(enable_label, row, 1, alignment=Qt.AlignmentFlag.AlignLeft)
-            self.saving_grid.addWidget(switch, row, 1, alignment=Qt.AlignmentFlag.AlignRight)
+            row_layout = QHBoxLayout()
+            row_layout.addWidget(label, 3)
+            row_layout.addWidget(enable_label, 1)
+            row_layout.addWidget(switch, 0)
+            row_layout.setSpacing(8)
+            row_layout.setStretch(0, 3)
+            row_layout.setStretch(1, 1)
+            row_layout.setStretch(2, 0)
+            self.saving_grid.addLayout(row_layout)
 
         # Adiciona o switch para show_media_dialog, mas só mostra se auto_save estiver ativado
         # self.media_dialog_label = QLabel('Show media dialog on auto-save')
