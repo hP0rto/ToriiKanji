@@ -1,5 +1,6 @@
 import os
 import numpy as np
+from datetime import datetime, timedelta
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QFrame,
     QListWidget, QListWidgetItem, QApplication
@@ -456,14 +457,9 @@ class AnalyticsPanel(QWidget):
         sorted_dates = sorted(date_counts.keys())
         max_captures = max(date_counts.values()) if date_counts else 0
         trend_series = QLineSeries()
-        min_date, max_date = QDateTime(), QDateTime()
-        first_point = True
         for d in sorted_dates:
             dt = QDateTime.fromString(d, "yyyy-MM")
             trend_series.append(dt.toMSecsSinceEpoch(), date_counts[d])
-            if first_point or dt < min_date: min_date = dt
-            if first_point or dt > max_date: max_date = dt
-            first_point = False
         pen = QPen(PRIMARY_COLOR)
         pen.setWidth(2)
         trend_series.setPen(pen)
@@ -476,6 +472,18 @@ class AnalyticsPanel(QWidget):
         self.trend_chart.addSeries(trend_series)
         axis_x = QDateTimeAxis()
         axis_x.setFormat("yyyy-MM")
+        min_date = QDateTime()
+        max_date = QDateTime()
+        first_point = True
+        for d in sorted_dates:
+            dt = QDateTime.fromString(d, "yyyy-MM")
+            if first_point or dt < min_date: min_date = dt
+            if first_point or dt > max_date: max_date = dt
+            first_point = False
+        if len(sorted_dates) == 1:
+            # For single point, expand range to make it visible
+            min_date = min_date.addMonths(-1)
+            max_date = max_date.addMonths(1)
         if min_date.isValid() and max_date.isValid():
             axis_x.setMin(min_date)
             axis_x.setMax(max_date)
