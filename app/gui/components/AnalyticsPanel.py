@@ -1,31 +1,47 @@
+"""
+Analytics panel for ToriiKanji.
+Displays capture statistics, charts, and top kanji rankings.
+"""
+
 import os
+
 import numpy as np
-from datetime import datetime, timedelta
-from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QFrame,
-    QListWidget, QListWidgetItem, QApplication
-)
-from PyQt6.QtGui import (
-    QPixmap, QIcon, QFont, QColor, QPainter, QBrush, QPen, QPainterPath, QRegion
-)
-from PyQt6.QtCore import Qt, QDateTime, QTimer, QRectF
 from PyQt6.QtCharts import (
-    QChart, QChartView, QBarSeries, QBarSet, QLineSeries,
-    QValueAxis, QBarCategoryAxis, QDateTimeAxis,
-    QAbstractAxis
+    QAbstractAxis,
+    QBarCategoryAxis,
+    QBarSeries,
+    QBarSet,
+    QChart,
+    QChartView,
+    QDateTimeAxis,
+    QLineSeries,
+    QValueAxis,
+)
+from PyQt6.QtCore import QDateTime, QRectF, Qt
+from PyQt6.QtGui import QBrush, QFont, QIcon, QPainter, QPainterPath, QPen, QPixmap, QRegion
+from PyQt6.QtWidgets import (
+    QApplication,
+    QFrame,
+    QGridLayout,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QVBoxLayout,
+    QWidget,
 )
 
 from gui.components.KanjiCard import KanjiCard
-
+from gui.theme import BG_BALLOON, BORDER_LIGHT
+from gui.theme import Q_BG_CARD as BG_COLOR_DARK
+from gui.theme import Q_BORDER as BORDER_COLOR
+from gui.theme import Q_GRID_LINE as GRID_LINE_COLOR
+from gui.theme import Q_PRIMARY as PRIMARY_COLOR
+from gui.theme import Q_TEXT_HEADER as TEXT_COLOR_HEADER
+from gui.theme import Q_TEXT_MUTED as TEXT_COLOR_MUTED
+from gui.theme import Q_TEXT_NORMAL as TEXT_COLOR_NORMAL
 from utils.paths import BOOK_OPEN_ICON, TARGET_ICON, TRENDING_UP_ICON
 
-PRIMARY_COLOR = QColor("#C24338") 
-BG_COLOR_DARK = QColor("#2c2c2c")
-BORDER_COLOR = QColor("#333333")
-TEXT_COLOR_NORMAL = QColor("#FFFFFF")
-TEXT_COLOR_MUTED = QColor("#AAAAAA")
-TEXT_COLOR_HEADER = QColor("#FFFFFF")
-GRID_LINE_COLOR = QColor("#2A2A35")
 
 class BaseCard(QFrame):
     def __init__(self, parent=None):
@@ -186,7 +202,7 @@ class KanjiListItemWidget(BaseCard):
         card.setWindowFlags(Qt.WindowType.ToolTip)
         card.setFixedSize(300, 170)
         # Add a soft rounded border for the balloon only
-        card.setStyleSheet(card.styleSheet() + "\nQFrame#kanjiCard { border: 2px solid #555; background-color: #2b2b2b; }")
+        card.setStyleSheet(card.styleSheet() + f"\nQFrame#kanjiCard {{ border: 2px solid {BORDER_LIGHT}; background-color: {BG_BALLOON}; }}")
         # Apply a rounded mask to the card (balloon) only
         
         path = QPainterPath()
@@ -219,9 +235,9 @@ class KanjiListItemWidget(BaseCard):
 
 # --- Main Analytics Panel ---
 class AnalyticsPanel(QWidget):
-    def __init__(self, analitycs_service, kanji_service, parent=None ):
+    def __init__(self, analytics_service, kanji_service, parent=None ):
         super().__init__(parent)
-        self.analitycs_service = analitycs_service
+        self.analytics_service = analytics_service
         self.kanji_service = kanji_service
         
         self.setStyleSheet(f"background-color: {BG_COLOR_DARK.name()};")
@@ -416,7 +432,7 @@ class AnalyticsPanel(QWidget):
         self.jlpt_chart.setAnimationOptions(QChart.AnimationOption.SeriesAnimations)
 
         # --- Media Chart ---
-        media_counts = self.analitycs_service.count_by_media()
+        media_counts = self.analytics_service.count_by_media()
         media_categories = []
         media_values = []
         max_media_count = 0
@@ -450,7 +466,7 @@ class AnalyticsPanel(QWidget):
         self.media_chart.setAnimationOptions(QChart.AnimationOption.SeriesAnimations)
 
         # --- Trend Chart ---
-        captures = self.analitycs_service.get_captures_with_dates()
+        captures = self.analytics_service.get_captures_with_dates()
         from collections import Counter
         dates = [c['date'][:7] for c in captures if 'date' in c]  # YYYY-MM
         date_counts = Counter(dates)

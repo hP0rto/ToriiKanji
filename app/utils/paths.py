@@ -1,12 +1,15 @@
-from pathlib import Path
+"""
+Centralized path definitions for ToriiKanji.
+All file and directory paths used across the application are defined here.
+"""
+import os
 import platform
-import shutil
-import os, sys
-'''
-    Arquivo para centralizar acesso de caminhos no codigo
-'''
+import sys
+from pathlib import Path
+
+
 def resource_path(relative_path):
-    """ Retorna o caminho absoluto para o recurso, funcionando tanto no dev quanto no PyInstaller """
+    """Return the absolute path to a resource, working in both dev and PyInstaller modes."""
     try:
         base_path = Path(sys._MEIPASS)
     except Exception:
@@ -41,6 +44,9 @@ TRENDING_UP_ICON = ASSETS / 'trending-up.svg'
 TARGET_ICON = ASSETS / 'target.svg'
 ICON = ASSETS / 'icon' / 'icon.ico'
 NO_IMG = ASSETS / 'no_image.png'
+
+# Bundled kanji dictionary used to seed the database on first run
+KANJI_SEED_PATH = ASSETS / 'data' / 'kanji_dict.json.gz'
 
 
 

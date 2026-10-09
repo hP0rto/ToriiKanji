@@ -1,62 +1,86 @@
+"""
+Helper utilities for ToriiKanji.
+Thread management, image handling, and platform-specific utilities.
+"""
+
 import os
-from PyQt6.QtCore import  QThread
-from PyQt6.QtWidgets import QMessageBox
+
+from PyQt6.QtCore import QThread
 from PyQt6.QtGui import QPixmap
 
-from core.workers.db_worker import DbWorker
-from core.workers.ocr_worker import OcrWorker
-
 from utils.paths import NO_IMG
+
+
+def run_in_thread(worker, on_finished=None, on_error=None):
+    """
+    Run a QObject worker in a background QThread.
+    
+    Args:
+        worker: QObject with a 'run' slot, 'finished' and 'error' signals
+        on_finished: Callback for successful completion
+        on_error: Callback for error handling
         
-def run_in_thread(worker: OcrWorker | DbWorker, on_finished=None, on_error=None):
+    Returns:
+        QThread instance (keep a reference to prevent garbage collection)
+    """
     _thread = QThread()
 
     worker.moveToThread(_thread)
-
     _thread.started.connect(worker.run)
 
     if on_finished:
         worker.finished.connect(on_finished)
     if on_error:
-        worker.error.connect(on_error)     
+        worker.error.connect(on_error)
 
     worker.finished.connect(_thread.quit)
     worker.finished.connect(worker.deleteLater)
     _thread.finished.connect(_thread.deleteLater)
 
     _thread.start()
-
     return _thread
-        
-def pixmap_null_handler(pixmap: QPixmap): 
-    return QPixmap(str(NO_IMG)).scaled(200,200) if pixmap.isNull() else pixmap
 
-import win32process, win32gui, win32api
 
-    
+def pixmap_null_handler(pixmap: QPixmap):
+    """Return a placeholder image if the pixmap is null."""
+    return QPixmap(str(NO_IMG)).scaled(200, 200) if pixmap.isNull() else pixmap
+
+
+import win32api
+import win32gui
+import win32process
+
+
 def get_app_name():
+    """
+    Get the name of the currently focused application.
+    Tries to get the friendly FileDescription first, falls back to executable name.
+    
+    Returns:
+        str or None: Application name, or None if detection fails
+    """
     try:
         hwnd = win32gui.GetForegroundWindow()
         _, pid = win32process.GetWindowThreadProcessId(hwnd)
         h_process = win32api.OpenProcess(0x1000, False, pid)
         exe_path = win32process.GetModuleFileNameEx(h_process, 0)
-        
-        # Tenta pegar o "nome bonito" (FileDescription)
+
+        # Try to get the friendly name (FileDescription)
         try:
-            info = win32api.GetFileVersionInfo(exe_path, "\\StringFileInfo\\040904b0\\FileDescription")
-            if info: # Se encontrou o nome bonito, retorna ele
+            info = win32api.GetFileVersionInfo(
+                exe_path, "\\StringFileInfo\\040904b0\\FileDescription"
+            )
+            if info:
                 return info
         except Exception:
-            # Se deu erro ao buscar o nome bonito, não faz nada e vai para o plano B
             pass
 
-        # PLANO B: Se não encontrou o nome bonito, usa o nome do executável
+        # Fallback: use the executable filename without extension
         if exe_path:
             base_name = os.path.basename(exe_path)
-            # Remove a extensão .exe e retorna o nome limpo
             friendly_name = os.path.splitext(base_name)[0]
             return friendly_name
-            
+
     except Exception as e:
-        print(f"Erro ao tentar obter o nome do app: {e}")
-        return None # Retorna None em caso de qualquer outro erro
+        print(f"Error getting app name: {e}")
+        return None

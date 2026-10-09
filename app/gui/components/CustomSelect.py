@@ -1,4 +1,7 @@
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QComboBox
+from PyQt6.QtWidgets import QComboBox, QVBoxLayout, QWidget
+
+from gui.theme import BG_HOVER, PRIMARY, TEXT_NORMAL
+
 
 class CustomSelect(QWidget):
     def __init__(self):
@@ -7,47 +10,47 @@ class CustomSelect(QWidget):
         layout = QVBoxLayout()
 
         combo = QComboBox()
-        combo.addItems(["Opção 1", "Opção 2", "Opção 3"])
+        combo.addItems(["Option 1", "Option 2", "Option 3"])
 
-        combo.setStyleSheet("""
-            QComboBox {
-                background-color: #3C3C3C;       /* cor de fundo */
-                color: #FFFFFF;                  /* cor da fonte */
-                border: 2px solid #C24338;       /* borda primária */
-                border-radius: 12px;             /* cantos arredondados */
-                padding: 6px 12px;               /* espaçamento interno */
+        combo.setStyleSheet(f"""
+            QComboBox {{
+                background-color: {BG_HOVER};    /* background */
+                color: {TEXT_NORMAL};            /* font color */
+                border: 2px solid {PRIMARY};     /* primary border */
+                border-radius: 12px;             /* rounded corners */
+                padding: 6px 12px;               /* inner spacing */
                 font-size: 14px;
-            }
+            }}
             
-            /* Quando passa o mouse */
-            QComboBox:hover {
-                border: 2px solid #FFFFFF;
-            }
+            /* On mouse hover */
+            QComboBox:hover {{
+                border: 2px solid {TEXT_NORMAL};
+            }}
 
-            /* Quando abre a lista */
-            QComboBox QAbstractItemView {
-                background-color: #3C3C3C;
-                color: #FFFFFF;
-                border: 1px solid #C24338;
-                selection-background-color: #C24338;
-                selection-color: #FFFFFF;
+            /* When the list is open */
+            QComboBox QAbstractItemView {{
+                background-color: {BG_HOVER};
+                color: {TEXT_NORMAL};
+                border: 1px solid {PRIMARY};
+                selection-background-color: {PRIMARY};
+                selection-color: {TEXT_NORMAL};
                 border-radius: 8px;
-            }
+            }}
 
-            /* Setinha do lado */
-            QComboBox::drop-down {
+            /* Dropdown arrow area */
+            QComboBox::drop-down {{
                 border: none;
                 width: 30px;
-                background-color: #C24338;
+                background-color: {PRIMARY};
                 border-top-right-radius: 12px;
                 border-bottom-right-radius: 12px;
-            }
+            }}
 
-            QComboBox::down-arrow {
-                image: url(assets/arrow_down.svg); /* pode usar um ícone seu */
+            QComboBox::down-arrow {{
+                image: url(assets/arrow_down.svg); /* can use a custom icon */
                 width: 14px;
                 height: 14px;
-            }
+            }}
         """)
 
         layout.addWidget(combo)

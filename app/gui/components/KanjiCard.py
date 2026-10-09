@@ -1,50 +1,52 @@
-from PyQt6.QtWidgets import QSizePolicy, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QFrame
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout
+
+from gui.theme import BG_BALLOON, PRIMARY, TEXT_MUTED, TEXT_NORMAL
+
 
 class KanjiCard(QFrame):
     def __init__(self, kanji, kunyomi, onyomi, meaning, jlpt, strokes=None, parent=None):
         super().__init__(parent)
 
         self.setObjectName("kanjiCard")
-        self.setStyleSheet("""
-            QFrame#kanjiCard {
-                background-color: #2b2b2b;
+        self.setStyleSheet(f"""
+            QFrame#kanjiCard {{
+                background-color: {BG_BALLOON};
                 border-radius: 8px;
                 padding: 10px;
-            }
-            QLabel {
-                color: white;
-            }
-            QLabel[role="title"] {
-                color: #aaa;
+            }}
+            QLabel {{
+                color: {TEXT_NORMAL};
+            }}
+            QLabel[role="title"] {{
+                color: {TEXT_MUTED};
                 font-size: 12px;
-            }
-            QLabel[role="kanji"] {
-                color: white;
+            }}
+            QLabel[role="kanji"] {{
+                color: {TEXT_NORMAL};
                 font-size: 24px;
                 font-weight: bold;
-            }
+            }}
         """)
         layout = QHBoxLayout(self)
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        # Quadrado do kanji
+        # Kanji square
         kanji_box = QLabel(kanji)
         kanji_box.setFixedSize(60, 60)
         kanji_box.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        kanji_box.setStyleSheet("""
-            QLabel {
-                background-color: #C24338;
-                color: white;
+        kanji_box.setStyleSheet(f"""
+            QLabel {{
+                background-color: {PRIMARY};
+                color: {TEXT_NORMAL};
                 font-size: 28px;
                 font-weight: bold;
                 border-radius: 6px;
                 margin-right: 10px;
-            }
+            }}
         """)
         layout.addWidget(kanji_box)
 
-        # Infos ao lado
+        # Info on the side
         info_layout = QVBoxLayout()
 
         kunyomi_label = QLabel("Kunyomi")
@@ -67,13 +69,13 @@ class KanjiCard(QFrame):
         jlpt_label = QLabel("JLPT Level")
         jlpt_label.setProperty("role", "title")
         jlpt_value = QLabel(f'N{jlpt}' if jlpt is not None else "—")
-        jlpt_value.setStyleSheet('''
-                QLabel {
-                    background-color: #C24338;
-                    color: white;
+        jlpt_value.setStyleSheet(f'''
+                QLabel {{
+                    background-color: {PRIMARY};
+                    color: {TEXT_NORMAL};
                     border-radius: 6px;
                     padding: 10px;
-                }
+                }}
         ''')
 
         info_layout.addWidget(kunyomi_label)

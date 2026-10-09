@@ -1,6 +1,7 @@
 
 from db.database import get_connection
 
+
 class KanjiRepository:
 
     def find_many(self, kanjis):
@@ -28,10 +29,10 @@ class KanjiRepository:
         if order_dir not in ('ASC', 'DESC', 'COUNT'):
             order_dir = 'DESC'
             
-        if not 'COUNT':
-            order_clause = f"last_capture {order_dir}"
-        else: 
+        if order_dir == 'COUNT':
             order_clause = 'cnt DESC'
+        else:
+            order_clause = f"last_capture {order_dir}"
             
         with get_connection() as conn:
             cur = conn.cursor()

@@ -1,5 +1,6 @@
 from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
 
+
 class DbWorker(QObject):
     finished = pyqtSignal(object)
     error = pyqtSignal(str)

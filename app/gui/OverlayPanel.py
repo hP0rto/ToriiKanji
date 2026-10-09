@@ -1,60 +1,76 @@
-from PyQt6.QtWidgets import * 
-from PyQt6.QtGui import *
-from PyQt6.QtCore import *
+"""
+Overlay panel for ToriiKanji.
+Displays the current capture, OCR text, and kanji analysis cards.
+"""
 
-from gui.components.MediaManagementDialog import MediaManagementDialog
+from PyQt6.QtCore import Qt, pyqtSignal, pyqtSlot
+from PyQt6.QtGui import QPixmap
+from PyQt6.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
+    QLayout,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QSplitter,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
+
 from gui.components.buttons_factory import create_text_button
 from gui.components.KanjiCard import KanjiCard
-
-from core.services.media_service import MediaService
-from core.services.kanji_service import KanjiService
+from gui.components.MediaManagementDialog import MediaManagementDialog
+from gui.theme import PRIMARY, text_edit_style
+from utils.helpers import pixmap_null_handler
 from utils.i18n import t
 
-from utils.helpers import pixmap_null_handler
-class OverlayPanel(QWidget):
-    save_requested = pyqtSignal(dict) 
 
-    def __init__(self, main_window, ):
+class OverlayPanel(QWidget):
+    """Panel that displays OCR results with the captured image and kanji cards."""
+
+    save_requested = pyqtSignal(dict)
+
+    def __init__(self, main_window):
         super().__init__()
-        self.main_window = main_window # dependency injection 👍    
+        self.main_window = main_window
         self.result = None
-        self.kanji_service = KanjiService()
-        # Use the application's shared MediaService from main_window so signals propagate
+        # Use the application's shared KanjiService (injected via MainWindow)
+        self.kanji_service = self.main_window.kanji_service
+        # Use the application's shared MediaService so signals propagate
         self.media_service = self.main_window.media_service
-        
-        
+
+        # Media info row
         media_layout = QHBoxLayout()
         media_layout.addWidget(QLabel("App:"))
         self.media_label = QLabel("N/A")
         self.media_label.setStyleSheet("font-weight: bold;")
         self.change_media_button = QPushButton("Change")
-        
+
         media_layout.addWidget(self.media_label)
         media_layout.addStretch()
         media_layout.addWidget(self.change_media_button)
-        
+
         self.change_media_button.clicked.connect(self.on_change_media)
         self.change_media_button.hide()
-        
-        
+
         self._current_media_id = None
-        
-        # create layouts
+
+        # Main layout
         layout = QVBoxLayout()
         layout.addLayout(media_layout)
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        
-        splitter = QSplitter(Qt.Orientation.Vertical)
 
+        splitter = QSplitter(Qt.Orientation.Vertical)
         self.setLayout(layout)
-        
-        
+
+        # Top section: image and text
         top_container = QWidget()
         top_layout = QVBoxLayout(top_container)
-        
+
         self.capture_label = QLabel("No capture made")
         self.capture_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.capture_label.resize(400,400)
+        self.capture_label.resize(400, 400)
 
         self.text_box = QTextEdit("")
         self.text_box.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -62,68 +78,55 @@ class OverlayPanel(QWidget):
         self.text_box.setStyleSheet('font-size: 24px;')
         self.text_box.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.text_box.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-            
+
         top_layout.addWidget(self.capture_label)
         top_layout.addWidget(self.text_box)
 
+        # Bottom section: kanji cards
         bottom_container = QWidget()
         bottom_layout = QVBoxLayout(bottom_container)
-        
+
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
-        
+
         container = QWidget()
         self.kanjis_layout = QVBoxLayout(container)
-        
+
         scroll_area.setWidget(container)
-        
         bottom_layout.addWidget(scroll_area)
-        
+
         splitter.addWidget(top_container)
         splitter.addWidget(bottom_container)
         splitter.setSizes([self.height() // 2, self.height() // 2])
-        splitter.setStyleSheet("""
-            QSplitter::handle {
-                background-color: #C24338; /* Cor de fundo normal */
-                height: 3px; /* Espessura da divisória */
-            }
+        splitter.setStyleSheet(f"""
+            QSplitter::handle {{
+                background-color: {PRIMARY};
+                height: 3px;
+            }}
         """)
-        
-        
+
         layout.addWidget(splitter)
 
+        # Save button (only visible when auto_save is off)
         self.save_button = create_text_button(t('save'), on_click=self.on_save_clicked)
         self.save_button.hide()
-
         layout.addWidget(self.save_button)
-        
+
         self.update_ui_from_settings()
         self.show()
-    
+
     def resizeEvent(self, event):
+        """Adjust text box sizing on resize."""
         super().resizeEvent(event)
-        # Fonte: 6% da altura, mínimo 24, máximo 48
         font_size = max(24, min(48, int(self.height() * 0.06)))
-        self.text_box.setStyleSheet(f'''
-            QTextEdit {{
-                font-size: {font_size}px;
-                border-radius: 15px;
-                background-color: #2c2c2c;
-                color: #fff;
-                border: 1px solid #555;
-                padding: 8px;
-                text-align: center;
-            }}
-        ''')
+        self.text_box.setStyleSheet(text_edit_style(font_size))
         self.text_box.setFixedWidth(self.width() - 40)
-        self.text_box.setMinimumHeight(60)  # Minimum height for single-line or short text
-        self.text_box.setMaximumHeight(int(self.height() * 0.28))  # Max 28% of panel height
-    
+        self.text_box.setMinimumHeight(60)
+        self.text_box.setMaximumHeight(int(self.height() * 0.28))
+
     @pyqtSlot()
     def update_ui_from_settings(self):
-        """
-        Atualiza a UI com base nas configurações atuais.
-        """
+        """Update the UI based on current settings (e.g., auto_save state)."""
         auto_save_enabled = self.main_window.setting_service.user_settings.get("auto_save", False)
 
         if not auto_save_enabled:
@@ -134,58 +137,53 @@ class OverlayPanel(QWidget):
         else:
             if self.save_button:
                 self.save_button.setVisible(False)
-        
+
     def on_save_clicked(self):
-        """Emite o sinal pedindo pra salvar a captura"""
+        """Emit save_requested signal when the Save button is clicked."""
         if self.result and self._current_media_id is not None:
-            # Protege contra múltiplos cliques: desabilita e atualiza texto
+            # Prevent double-clicks
             self.save_button.setEnabled(False)
             self.save_button.setText("Saving...")
 
             self.result['media_id'] = self._current_media_id
             self.save_requested.emit(self.result)
-        
+
     def show_capture(self, result):
-        print(result)
-        
+        """Display a capture result (new or from collection)."""
         self.result = result
-        image_path = result.get('image_path') 
+        image_path = result.get('image_path')
         original_pixmap = result.get('pixmap')
         media_name = result.get('media_name')
         is_existing_capture = 'id' in result and result.get('id') is not None
-        
+
         if is_existing_capture:
-            # Visualizando uma captura da coleção
+            # Viewing a capture from the collection
             self.save_button.hide()
-            self.change_media_button.show() #
-            
-            # Pega o nome da mídia do banco de dados
+            self.change_media_button.show()
+
             media = self.media_service.get_media_by_id(result.get('media_id'))
             if media:
                 media_name = media['title']
             self._current_media_id = result.get('media_id')
         else:
-            # Visualizando uma NOVA captura (pós-OCR)
-            # Só mostrar/habilitar o botão quando auto_save estiver desativado
+            # Viewing a NEW capture (post-OCR)
             auto_save_enabled = self.main_window.setting_service.user_settings.get("auto_save", False)
             if auto_save_enabled:
                 self.save_button.hide()
             else:
                 self.save_button.show()
-                # habilita o botão para permitir salvar manualmente
                 self.save_button.setEnabled(True)
                 self.save_button.setText('Save')
-            
+
             self.change_media_button.show()
-            
+
             media_name = result.get('media_name')
             media_id = self.media_service.get_or_create_media_id(media_name)
             self._current_media_id = media_id
-        
-        
+
         if image_path:
             original_pixmap = pixmap_null_handler(QPixmap(image_path))
-        
+
         self.media_label.setText(media_name.title() if media_name else 'N/A')
 
         scaled_pixmap = original_pixmap.scaled(
@@ -193,31 +191,26 @@ class OverlayPanel(QWidget):
             Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.SmoothTransformation
         )
-        
         self.capture_label.setPixmap(scaled_pixmap)
-        
+
         kanjis = result.get('kanjis', self.kanji_service.get_all_kanji_capture(result.get('id')))
-        
+
         normalized_text = result.get('raw_text').replace("\n", "")
-        # Center text using HTML
         self.text_box.setHtml(f'<div style="text-align:center;">{normalized_text}</div>')
         self.text_box.setFixedWidth(self.width() - 40)
-        
+
         self.show_result(kanjis)
-        
         self.main_window.custom_tab.show_tab(0)
 
     @pyqtSlot(int)
     def on_capture_saved(self, capture_id):
-        """Recebe sinal do serviço informando que a captura foi salva.
-        Marca o botão como 'Saved' e mantém desabilitado para evitar re-salvamentos.
-        """
-        # Só atualiza se o botão estiver visível (ou se o usuário o clicou recentemente)
+        """Update the save button state when a capture is saved."""
         if hasattr(self, 'save_button') and self.save_button.isVisible():
             self.save_button.setEnabled(False)
             self.save_button.setText('Saved')
-        
+
     def show_result(self, result_dict):
+        """Display kanji cards for the given kanji data."""
         self.clear_layout(self.kanjis_layout)
         for row in result_dict:
             card = KanjiCard(
@@ -229,37 +222,34 @@ class OverlayPanel(QWidget):
                 row.get("strokes")
             )
             self.kanjis_layout.addWidget(card)
-            
+
     def on_change_media(self):
-        """ Abre um diálogo para o usuário gerenciar e selecionar uma mídia. """
+        """Open the media management dialog for changing media association."""
         dialog = MediaManagementDialog(self.media_service, self)
-        # Conecta o sinal do diálogo a um slot para atualizar a UI
         dialog.media_selected.connect(self.on_media_selected)
         dialog.exec()
-        
+
     @pyqtSlot(dict)
     def on_media_selected(self, media_data):
-        """ Atualiza a UI quando o usuário seleciona uma nova mídia no diálogo. """
+        """Handle media selection from the management dialog."""
         self.media_label.setText(media_data['title'])
         self._current_media_id = media_data['id']
-        
+
         is_existing_capture = 'id' in self.result and self.result.get('id') is not None
         if is_existing_capture:
             self.main_window.capture_service.update_capture_media(
-                self.result['id'], 
+                self.result['id'],
                 self._current_media_id
             )
-            from utils.i18n import t
             QMessageBox.information(self, t('success'), t('media_removed'))
-    
+
     def update_displayed_media(self, media_name, media_id):
-        """ Slot público para forçar a atualização da mídia exibida. """
+        """Public slot to force-update the displayed media info."""
         self.media_label.setText(media_name)
         self._current_media_id = media_id
-        
-        
+
     def clear_layout(self, layout: QLayout):
-        """Removes all widgets from a given QLayout."""
+        """Remove all widgets from a given QLayout."""
         if layout is None:
             return
 
@@ -267,12 +257,10 @@ class OverlayPanel(QWidget):
             item = layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
-                widget.setParent(None)  # Remove the widget from its parent
-                widget.deleteLater()    # Schedule the widget for deletion
+                widget.setParent(None)
+                widget.deleteLater()
             else:
-                # If the item is a nested layout, recursively clear it
                 sub_layout = item.layout()
                 if sub_layout is not None:
                     self.clear_layout(sub_layout)
-                # Delete the layout item itself
-                del item 
+                del item

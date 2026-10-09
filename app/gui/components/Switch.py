@@ -1,9 +1,17 @@
 from PyQt6.QtCore import (
-    QObject, QSize, QPointF, QPropertyAnimation, QEasingCurve,
-    pyqtProperty, pyqtSlot, Qt, 
+    QEasingCurve,
+    QObject,
+    QPointF,
+    QPropertyAnimation,
+    QSize,
+    Qt,
+    pyqtProperty,
+    pyqtSlot,
 )
-from PyQt6.QtGui import QPainter, QPalette, QLinearGradient, QGradient, QColor
+from PyQt6.QtGui import QColor, QGradient, QLinearGradient, QPainter
 from PyQt6.QtWidgets import QAbstractButton
+
+from gui.theme import Q_BG_HOVER, Q_PRIMARY, Q_SWITCH_DISABLED_BG, Q_SWITCH_DISABLED_HANDLE, Q_TEXT_ON_PRIMARY
 
 
 class SwitchPrivate(QObject):
@@ -40,16 +48,16 @@ class SwitchPrivate(QObject):
         painter.setPen(Qt.PenStyle.NoPen)
     
         if not self.mPointer.isEnabled():
-        # Estado desabilitado → cinza
-            bg_color = QColor("#555555")   # fundo cinza escuro
-            handle_color = QColor("#777777")  # bolinha cinza claro
+        # Disabled state → gray
+            bg_color = QColor(Q_SWITCH_DISABLED_BG)   # dark gray background
+            handle_color = QColor(Q_SWITCH_DISABLED_HANDLE)  # light gray handle
         else:
-            # Estado normal
-            bg_color = QColor("#3C3C3C")   # secundária (fundo apagado)
-            active_color = QColor("#C24338")  # primária (ativo)
+            # Normal state
+            bg_color = QColor(Q_BG_HOVER)   # secondary (muted background)
+            active_color = QColor(Q_PRIMARY)  # primary (active)
             current_color = bg_color if not self.mPointer.isChecked() else active_color
 
-            handle_color = QColor("#FFFFFF")  # bolinha branca
+            handle_color = QColor(Q_TEXT_ON_PRIMARY)  # white handle
             bg_color = current_color
 
 

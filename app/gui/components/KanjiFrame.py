@@ -1,6 +1,8 @@
-from PyQt6.QtWidgets import QFrame, QLabel, QVBoxLayout
-from PyQt6.QtCore import   QVariantAnimation, Qt, pyqtSignal, QTimer
+from PyQt6.QtCore import Qt, QVariantAnimation, pyqtSignal
 from PyQt6.QtGui import QColor, QPalette
+from PyQt6.QtWidgets import QFrame, QLabel, QVBoxLayout
+
+from gui.theme import BG_BALLOON, BG_HOVER, BORDER_LIGHT, PRIMARY, TEXT_NORMAL
 
 
 class KanjiFrame(QFrame):
@@ -11,8 +13,8 @@ class KanjiFrame(QFrame):
         self.setFixedSize(150, 180)
         self.setAutoFillBackground(True)
         self.kanji = kanji
-        self.normal_color = QColor("#3C3C3C")
-        self.hover_color = QColor("#C24338")
+        self.normal_color = QColor(BG_HOVER)
+        self.hover_color = QColor(PRIMARY)
         
         self.selected = False
 
@@ -31,19 +33,19 @@ class KanjiFrame(QFrame):
         kanji_box = QLabel(kanji['kanji'])
         kanji_box.setFixedSize(70, 70)
         kanji_box.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        kanji_box.setStyleSheet("""
-            QLabel {
-                background-color: #C24338;
-                color: white;
+        kanji_box.setStyleSheet(f"""
+            QLabel {{
+                background-color: {PRIMARY};
+                color: {TEXT_NORMAL};
                 font-size: 50px;
                 font-weight: bold;
                 border-radius: 6px;
                 padding: 5px
-            }
+            }}
         """)
         layout.addWidget(kanji_box)
     
-        capture = f'{kanji['cnt']} Captures' if kanji['cnt'] > 1 else f'1 Capture'
+        capture = f'{kanji['cnt']} Captures' if kanji['cnt'] > 1 else '1 Capture'
     
         layout.addWidget(QLabel(capture))
         
@@ -66,12 +68,12 @@ class KanjiFrame(QFrame):
     def toggle_selection(self):
         self.selected = not self.selected
         if self.selected:
-            self.setStyleSheet("background-color: #C24338;")  # azul, por exemplo
+            self.setStyleSheet(f"background-color: {PRIMARY};")  # selection highlight
         else:
             self.setStyleSheet("")
             
     def showEvent(self, event):
-        # garante que a geometry base só é salva quando o widget for exibido
+        # ensure the base geometry is only saved once the widget is shown
         if self._base_geometry is None:
             self._base_geometry = self.geometry()
         super().showEvent(event)
@@ -90,14 +92,6 @@ class KanjiFrame(QFrame):
         self.color_anim.setEndValue(self.hover_color)
         self.color_anim.start()
 
-        
-        # if self._balloon_timer is not None:
-        #     self._balloon_timer.stop()
-        #     self._balloon_timer.deleteLater()
-        # self._balloon_timer = QTimer(self)
-        # self._balloon_timer.setSingleShot(True)
-        # self._balloon_timer.timeout.connect(self._show_balloon)
-        # self._balloon_timer.start(2000)
         self._show_balloon()
         
         super().enterEvent(event)
@@ -123,10 +117,10 @@ class KanjiFrame(QFrame):
         card.setWindowFlags(Qt.WindowType.ToolTip)
         card.setFixedSize(300, 170)
         # Add a soft rounded border for the balloon only
-        card.setStyleSheet(card.styleSheet() + "\nQFrame#kanjiCard { border: 2px solid #555; background-color: #2b2b2b; }")
+        card.setStyleSheet(card.styleSheet() + f"\nQFrame#kanjiCard {{ border: 2px solid {BORDER_LIGHT}; background-color: {BG_BALLOON}; }}")
         # Apply a rounded mask to the card (balloon) only
-        from PyQt6.QtGui import QPainterPath, QRegion
         from PyQt6.QtCore import QRectF
+        from PyQt6.QtGui import QPainterPath, QRegion
         path = QPainterPath()
         rect = QRectF(0, 0, card.width(), card.height())
         path.addRoundedRect(rect, 8, 8)
@@ -151,12 +145,6 @@ class KanjiFrame(QFrame):
         self.color_anim.setStartValue(self.hover_color)
         self.color_anim.setEndValue(self.normal_color)
         self.color_anim.start()
-
-        # Cancel balloon timer if running
-        # if self._balloon_timer is not None:
-        #     self._balloon_timer.stop()
-        #     self._balloon_timer.deleteLater()
-        #     self._balloon_timer = None
 
         # Hide and delete balloon
         if self._balloon is not None:

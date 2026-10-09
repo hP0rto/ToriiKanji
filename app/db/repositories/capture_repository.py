@@ -1,5 +1,6 @@
 from db.database import get_connection
 
+
 class CaptureRepository:
     def list_captures_with_dates(self, order='ASC'):
         """Returns a list of captures with their timestamp/date field."""
@@ -7,6 +8,7 @@ class CaptureRepository:
             cur = conn.cursor()
             cur.execute(f'SELECT id, raw_text, image_path, media_id, timestamp as date FROM capture ORDER BY timestamp {order}')
             return [dict(row) for row in cur.fetchall()]
+
     def count_by_media(self):
         """Returns a list of dicts: [{'media': media_name_or_None, 'count': count}, ...]"""
         with get_connection() as conn:
@@ -21,6 +23,7 @@ class CaptureRepository:
             return [dict(row) for row in cur.fetchall()]
 
     def insert_capture(self, raw_text, image_path, media_id=None):
+        """Insert a new capture and return its ID."""
         with get_connection() as conn:
             cur = conn.cursor()
             cur.execute(''' 
@@ -30,6 +33,7 @@ class CaptureRepository:
             return cur.lastrowid
     
     def insert_capture_kanji(self, capture_id, kanji):
+        """Link a kanji character to a capture."""
         with get_connection() as conn:
             cur = conn.cursor()
             cur.execute('''
@@ -39,15 +43,18 @@ class CaptureRepository:
             conn.commit()
             
     def select_captures(self):
+        """Get all captures, descending."""
         return self.select_captures_ordered('DESC')
 
     def select_captures_ordered(self, order='DESC'):
+        """Get all captures ordered by timestamp."""
         with get_connection() as conn:
             cur = conn.cursor()
             cur.execute(f'SELECT * FROM capture ORDER BY timestamp {order}')
             return [dict(row) for row in cur.fetchall()]
 
     def select_captures_by_media(self, media_id, order='DESC'):
+        """Get all captures filtered by media ID."""
         with get_connection() as conn:
             cur = conn.cursor()
             # media_id None previously meant 'all' in UI; treat explicit sentinel -1 as 'no media'
@@ -62,6 +69,7 @@ class CaptureRepository:
             return [dict(row) for row in cur.fetchall()]
 
     def get_captures_by_kanji(self, kanji_char, order='DESC'):
+        """Get all captures that contain a specific kanji."""
         with get_connection() as conn:
             cur = conn.cursor()
             cur.execute(f"""
@@ -73,12 +81,14 @@ class CaptureRepository:
             return [dict(row) for row in cur.fetchall()]
             
     def select_capture_by_id(self, id):
+        """Get a specific capture by its ID."""
         with get_connection() as conn:
             cur = conn.cursor()
             cur.execute('SELECT * FROM capture WHERE id = ?', (id,))
             return cur.fetchone()
     
     def delete_capture(self,id):
+        """Delete a capture and its associated kanji links."""
         with get_connection() as conn:
             cur = conn.cursor()
             cur.execute('DELETE FROM capture_kanji WHERE capture_id = ?', (id,))
@@ -87,6 +97,7 @@ class CaptureRepository:
             return cur.rowcount > 0
         
     def update_media_id(self, capture_id, media_id):
+        """Update the media association for a capture."""
         with get_connection() as conn:
             cur = conn.cursor()
             cur.execute('UPDATE capture SET media_id = ? WHERE id = ?', (media_id, capture_id))

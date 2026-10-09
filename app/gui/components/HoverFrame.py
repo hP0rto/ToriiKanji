@@ -1,10 +1,12 @@
-from PyQt6.QtWidgets import QFrame, QLabel, QVBoxLayout
-from PyQt6.QtCore import   QVariantAnimation, Qt, pyqtSignal
-from PyQt6.QtGui import QColor, QPalette, QPixmap
+from datetime import datetime
 
+from PyQt6.QtCore import Qt, QVariantAnimation, pyqtSignal
+from PyQt6.QtGui import QColor, QPalette, QPixmap
+from PyQt6.QtWidgets import QFrame, QLabel, QVBoxLayout
+
+from gui.theme import BG_HOVER, PRIMARY
 from utils.helpers import pixmap_null_handler
 
-from datetime import datetime
 
 class HoverFrame(QFrame):
     clicked = pyqtSignal(object)
@@ -14,20 +16,20 @@ class HoverFrame(QFrame):
         self.setFixedSize(150, 180)
         self.setAutoFillBackground(True)
         self.capture = capture
-        # cores
-        self.normal_color = QColor("#3C3C3C")
-        self.hover_color = QColor("#C24338")
+        # colors
+        self.normal_color = QColor(BG_HOVER)
+        self.hover_color = QColor(PRIMARY)
         
         self.selected = False
         
         self.media_service = media_service
 
-        # paleta inicial
+        # initial palette
         pal = self.palette()
         pal.setColor(QPalette.ColorRole.Window, self.normal_color)
         self.setPalette(pal)
 
-        # label de teste
+        # thumbnail + info layout
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         
@@ -52,7 +54,7 @@ class HoverFrame(QFrame):
         self.setLayout(layout)
 
 
-        # animação de cor
+        # color animation
         self.color_anim = QVariantAnimation()
         self.color_anim.setDuration(200)
         self.color_anim.valueChanged.connect(self.update_color)
@@ -73,12 +75,12 @@ class HoverFrame(QFrame):
     def toggle_selection(self):
         self.selected = not self.selected
         if self.selected:
-            self.setStyleSheet("background-color: #C24338;")  # azul, por exemplo
+            self.setStyleSheet(f"background-color: {PRIMARY};")  # selection highlight
         else:
             self.setStyleSheet("")
             
     def showEvent(self, event):
-        # garante que a geometry base só é salva quando o widget for exibido
+        # ensure the base geometry is only saved once the widget is shown
         if self._base_geometry is None:
             self._base_geometry = self.geometry()
         super().showEvent(event)

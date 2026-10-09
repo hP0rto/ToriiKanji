@@ -181,3 +181,9 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+# Development & planning
+refactoring_plan.md
+requirements-dev.txt
+ruff.toml
+run.bat
