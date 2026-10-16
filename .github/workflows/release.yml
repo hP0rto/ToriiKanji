@@ -37,9 +37,9 @@ jobs:
           pyinstaller --noconfirm --onedir --windowed --name "ToriiKanji" --paths "app" --icon "assets/Icon/Icon.ico" --add-data "assets;assets" --add-data "tesseract;tesseract" app/main.py
 
       - name: Compile Inno Setup Installer
-        uses: jrsoftware/inno-setup-action@v1
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.9
         with:
-          filepath: setup.iss
+          path: setup.iss
 
       - name: Determine Version Tag
         id: vars
