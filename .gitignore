@@ -1,4 +1,6 @@
-tesseract/
+# Ignore binaries in tesseract, but keep traineddata
+tesseract/*.exe
+tesseract/*.dll
 database/
 captures/
 /Output/
